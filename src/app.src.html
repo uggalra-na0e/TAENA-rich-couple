@@ -342,7 +342,7 @@ function entryRows(list,del=true){
   if(!list.length)return '<div class="empty">아직 기록이 없어요. 아래 버튼으로 첫 기록을 적어 보세요.</div>';
   return `<div class="tblwrap"><table>${list.map(e=>`<tr><td>${e.date.slice(5).replace('-','/')}</td><td><span class="who ${whoCls(e.who)}">${esc(e.who)}</span>${esc(e.memo||e.cat)} <span class="cat">${esc(e.cat)}${e.pay==='카드'?' · 카드':''}</span></td><td class="m ${e.type!=='지출'?'plus':''}">${e.type==='지출'?'−':'+'}${won(e.amount)}</td>${del?`<td class="m"><button type="button" class="x" data-edit="${e.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${e.id}" aria-label="지우기">✕</button></td>`:''}</tr>`).join('')}</table></div>`}
 // 이 달 전체 기록 (지출·수입·저축 다 같이)
-function allDlg(f){const es=monthData(cur).es,L=sortDesc(es.filter(e=>f==='전체'||(f==='카드'?e.type==='지출'&&e.pay==='카드':f==='현금'?e.type==='지출'&&e.pay!=='카드':e.type===f)));
+let allF=null;function allDlg(f){allF=f;const es=monthData(cur).es,L=sortDesc(es.filter(e=>f==='전체'||(f==='카드'?e.type==='지출'&&e.pay==='카드':f==='현금'?e.type==='지출'&&e.pay!=='카드':e.type===f)));
   openDlg(mLabel(cur)+' 전체 기록 '+es.length+'건',`<div class="seg" style="margin-bottom:6px">${['전체','현금','카드','수입','저축'].map(k=>`<button type="button" data-allf="${k}" aria-pressed="${k===f}">${k==='현금'?'현금지출':k==='카드'?'카드':k}</button>`).join('')}</div>${entryRows(L)}<div class="small" style="margin-top:6px">고정지출 '냈어요'로 적힌 기록도 여기 보여요. 총 지출 계산은 방 그림 총 지출을 눌러서 보세요.</div>`,'닫기',()=>{})}
 function sortDesc(a){return a.sort((x,y)=>(y.date+y.t).localeCompare(x.date+x.t))}
 
@@ -950,7 +950,7 @@ document.addEventListener('click',e=>{
   else if(ds.pickadd){preWho=ds.who||null;addPicker()}
   else if(ds.add){preWho=ds.who||null;preCat=ds.cat||null;entryDlg(ds.add,null,ds.pay)}
   else if(ds.edit){const r=Store.get(ds.edit);if(r)entryDlg(r.type,r)}
-  else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);toast('지웠어요 · 설정 → 휴지통에서 되살릴 수 있어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
+  else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);if(allF&&dlg.open&&t.closest('#dlg'))allDlg(allF);toast('지웠어요 · 설정 → 휴지통에서 되살릴 수 있어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
   else if(ds.bill)billDlg(ds.bill==='new'?null:Store.get(ds.bill));
   else if(ds.acc)accDlg(ds.acc==='new'?null:Store.get(ds.acc));
   else if(ds.goal)goalDlg();
