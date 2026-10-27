@@ -56,7 +56,7 @@ button,input,select,textarea{font:inherit;color:var(--ink)}
 .side{display:grid;gap:12px;align-content:start;min-width:0}
 .cols>.side:last-child{display:flex;flex-direction:column}.cols>.side>:last-child{flex:1}
 .leftcol{display:flex;flex-direction:column;gap:12px;min-width:0}.leftcol .room{align-self:stretch}
-.recent{flex:1;display:flex;flex-direction:column}.recent .rbox{flex:1;position:relative;min-height:160px}.recent .rin{position:absolute;inset:0;overflow:auto}
+.recent{flex:1;display:flex;flex-direction:column}.recent .rbox{flex:1;position:relative;min-height:96px}.recent .rin{position:absolute;inset:0;overflow:auto}
 @media (max-width:820px){.recent .rbox{min-height:0}.recent .rin{position:static;max-height:none}}
 .card{border:3px solid var(--line);background:var(--paper);padding:10px 12px;box-shadow:4px 4px 0 var(--line);min-width:0}
 .card h3{margin:0 0 6px;font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -119,6 +119,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
+.tb{margin:4px 0}.tb .row{font-size:12px}
 .vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th{padding:3px 4px}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -189,7 +190,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.8.5';
+const VERSION='0.8.6';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -316,15 +317,11 @@ function vHome(){
 </div>`})()}
     ${upcomingCard()}
     ${cur===ym(today())&&new Date().getDate()<=7?reviewCard(addMonth(cur,-1),'지난달('+Number(addMonth(cur,-1).slice(5))+'월) 돌아보기'):''}
-    ${budgetCard(cur)}
     <div class="grid2">
       <div class="card"><h3>모은 돈 <span class="r small">${Math.floor(goalPct)}%</span></h3><div class="big" style="font-size:20px">${won(saved)}<span class="won">원</span></div>
         <div class="hp"><span style="width:${goalPct}%"></span></div>
         <div class="small">목표 ${man(s.goal)} ${esc(s.goalName||'')}${etaText(s.goal-saved)}</div>${emerTotal()?`<div class="small">🛟 비상금 따로 ${won(emerTotal())}원</div>`:''}</div>
-      <div class="card"><h3>우리 재정 상태</h3>
-      ${rate==null?'<div class="small">이번 달 수입을 적으면 저축률과 레벨이 나와요.</div>':`<div class="lvl"><span class="badge">Lv.${L.lv}</span><div><b>${L.name}</b><div class="small">수입 ${won(d.inc)} − 지출 ${won(d.spend)} = <b style="color:${d.inc-d.spend>=0?'var(--good)':'var(--red)'}">${d.inc-d.spend>=0?'+':''}${won(d.inc-d.spend)}</b></div></div></div>
-      <div class="hp ${rate<0?'r':'g'}"><span style="width:${Math.max(3,Math.min(100,Math.abs(rate)*100))}%"></span></div>`}
-      <div class="row small"><span>${rate==null?'':'남기는 비율 '+Math.round(rate*100)+'%'}</span></div></div>
+      ${budgetCard(cur)}
     </div>
   </div></div>
   </div></div>`;
@@ -387,6 +384,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8.6','10/27','예산을 식비(식비+장보기+카페·간식), 배달+외식(배달+외식·데이트) 두 개로. 얇게 줄여 모은 돈 옆에. 우리 재정 상태 칸 없앰'],
   ['0.8.5','10/27','예산을 세로 막대그래프로, 크기 고정 (분류 많으면 옆으로 넘기기)'],
   ['0.8.4','10/27','우리집: 최근 기록을 방 그림 아래로, 양쪽 아래 끝 맞춤. 총 지출을 주니·영이·같이·합계 표로'],
   ['0.8.3','10/27','＋ 적기 버튼 하나로 통합: 현금지출·카드로 쓴 돈·카드값·고정지출·대출·수입/저축·통장 중에 골라 적기'],
@@ -410,16 +408,16 @@ const CHANGES=[
   ['0.4.2','10/27','웹 주소로 이사 (새로고침만 하면 업데이트)'],
   ['0.4','10/26','캐릭터 걷기·대화·꾸미기, 상태 메시지, 데스크톱 위젯']];
 /* ---------- 예산·돌아보기 ---------- */
-// 분류별 한 달 예산은 settings.budgets {분류: 금액}. 그 달 지출 기록(카드·현금 모두) 합계와 비교
+// 예산은 두 묶음만: 묶음 안의 분류 지출을 다 더해서 비교 (카드·현금 모두). settings.budgets {묶음이름: 금액}
+const BUDGETS=[['식비',['식비','장보기','카페·간식']],['배달+외식',['배달','외식·데이트']]];
 function catSpend(m){const by={};for(const e of monthData(m).es)if(e.type==='지출')by[e.cat]=(by[e.cat]||0)+Number(e.amount||0);return by}
-function budgetRows(m){const b=settings().budgets||{},by=catSpend(m);return Object.entries(b).filter(([,v])=>Number(v)>0).map(([c,v])=>({c,b:Number(v),s:by[c]||0})).sort((a,b)=>b.s/b.b-a.s/a.b)}
+function budgetRows(m){const b=settings().budgets||{},by=catSpend(m);return BUDGETS.map(([n,cs])=>({c:n,cats:cs,b:Number(b[n]??(n==='배달+외식'?b.배달:0))||0,s:cs.reduce((a,c)=>a+(by[c]||0),0)})).filter(x=>x.b>0)}
 function budgetCard(m){const R=budgetRows(m);
-  // 세로 막대, 높이 고정. 분류가 많으면 칸 안에서 옆으로 넘겨 봐요
-  return `<div class="card"><h3>${mLabel(m)} 예산 <span class="r"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px;box-shadow:2px 2px 0 var(--line)" data-budget="1">예산 정하기</button></span></h3>${R.length?`<div class="vbud">${R.map(x=>{const pc=x.s/x.b*100,over=x.s>x.b,warn=pc>=80,col=over?'var(--red)':warn?'var(--warn)':'var(--good)';
-    return `<div class="vb" title="${esc(x.c)} ${won(x.s)} / ${won(x.b)}원"><span class="pc" style="color:${col}">${Math.round(pc)}%</span><div class="vt"><i style="height:${Math.min(100,pc)}%;background:${col}"></i></div><b>${esc(x.c)}</b><span class="small">${over?'<b style="color:var(--red)">'+man(x.s-x.b)+' 넘음</b>':man(x.b-x.s)+' 남음'}</span></div>`}).join('')}</div>`
-    :'<div class="empty">분류마다 한 달 예산을 정하면 막대로 보여 줘요.</div>'}</div>`}
-function budgetDlg(){const s=settings(),b=s.budgets||{};
-  openDlg('분류별 한 달 예산',`<div class="small">쓰고 싶은 분류만 적어요. 비우면 예산 없음. 카드·현금 지출 기록을 모두 더해서 비교해요.</div>${CATS.지출.map(c=>`<label class="f">${esc(c)}<input type="text" inputmode="numeric" data-bud="${esc(c)}" value="${b[c]?won(b[c]):''}" placeholder="예) 300,000"></label>`).join('')}`,'저장',()=>{
+  return `<div class="card"><h3>${Number(m.slice(5))}월 예산 <span class="r"><button type="button" class="btn ghost" style="padding:0 6px;font-size:10px;box-shadow:2px 2px 0 var(--line)" data-budget="1">정하기</button></span></h3>${R.length?R.map(x=>{const pc=x.s/x.b*100,over=x.s>x.b,warn=pc>=80,col=over?'var(--red)':warn?'var(--warn)':'var(--good)';
+    return `<div class="tb" title="${esc(x.cats.join(' + '))}"><div class="row"><b>${esc(x.c)}</b><span class="small">${man(x.s)} / ${man(x.b)} ${over?'<b style="color:var(--red)">넘음</b>':''}</span></div><div class="hp" style="height:10px"><span style="width:${Math.min(100,pc)}%;background:${col}"></span></div></div>`}).join('')
+    :'<div class="small">식비, 배달+외식 예산을 정해 보세요.</div>'}</div>`}
+function budgetDlg(){const s=settings(),R=budgetRows(cur),cur0=n=>(R.find(x=>x.c===n)||{}).b||'';
+  openDlg('한 달 예산',`<div class="small">두 묶음만 봐요. 묶음 안 분류를 다 더해서 비교해요(카드·현금 모두).</div>${BUDGETS.map(([n,cs])=>`<label class="f">${esc(n)} <span class="small">(${esc(cs.join(' + '))})</span><input type="text" inputmode="numeric" data-bud="${esc(n)}" value="${cur0(n)?won(cur0(n)):''}" placeholder="예) 600,000"></label>`).join('')}`,'저장',()=>{
     const o={};document.querySelectorAll('[data-bud]').forEach(el=>{const n=Number(el.value.replace(/[^0-9]/g,''));if(n>0)o[el.dataset.bud]=n});Store.put({...s,budgets:o});toast('예산을 저장했어요')});
   document.querySelectorAll('[data-bud]').forEach(a=>a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''}))}
 // m월 돌아보기: 전달과 비교, 많이 쓴 대분류, 가장 많이 늘어난 분류, 예산 넘은 분류
