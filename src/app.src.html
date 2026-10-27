@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.18';
+const VERSION='1.0.19';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -345,7 +345,7 @@ function ddayOf(m,day){const[y,mo]=m.split('-').map(Number);const due=new Date(y
   try{const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));if(o.url&&o.key){ls.set('jy.sheet',{url:o.url,key:o.key});ls.set('jy.since',0);ls.set('jy.joined',true)}}catch(e){}
   history.replaceState(null,'',location.pathname+location.search)})();
 const WIDGET=location.hash==='#widget';if(WIDGET){document.documentElement.classList.add('widget');document.title='주니와 영이 위젯 (JY-WIDGET)';setTimeout(()=>document.title='주니와 영이 위젯',20000)}
-let view=(!WIDGET&&/^#(home|spend|card|fixed|loan|inc|save|report|tax|wish)$/.test(location.hash))?location.hash.slice(1):ls.get('jy.view','home'),cur=ym(today()),spendWho='전체',spendPay='전체';
+let view=(!WIDGET&&/^#(home|spend|card|fixed|loan|inc|save|report|tax|wish)$/.test(location.hash))?location.hash.slice(1):'home',cur=ym(today()),spendWho='전체',spendPay='전체';
 const main=document.getElementById('main');
 function monthNav(){return `<span class="month"><button type="button" data-mon="-1" aria-label="이전 달">◀</button>${mLabel(cur)}<button type="button" data-mon="1" aria-label="다음 달">▶</button></span>`}
 function entryRows(list,del=true){
@@ -497,6 +497,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.19','10/27','앱을 열면 항상 우리집부터(폰 뒤로가기가 우리집으로 오게)'],
   ['1.0.18','10/27','새 버전이 폰에 바로 반영되게(옛날 화면 안 남게), 폰 우리집 버튼 고정'],
   ['1.0.17','10/27','뒤로가기: 다른 탭에서는 우리집으로, 우리집에서는 나가기'],
   ['1.0.16','10/27','모든 탭에 🏠 우리집 버튼(칸 아래 오른쪽), 맨 위 제목 눌러도 우리집으로'],
