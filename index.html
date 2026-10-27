@@ -182,7 +182,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.6.2';
+const VERSION='0.6.3';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -266,7 +266,9 @@ function monthData(m){
   const bill=bills.reduce((a,b)=>a+Number(b.amount||0),0);
   return{es,spend,inc,sav,byWho,bills,bill};
 }
-const savedTotal=()=>Store.all('account').reduce((a,x)=>a+Number(x.balance||0),0);
+// 비상금 통장은 목표용 '모은 돈'에서 빼고 따로 봐요
+const savedTotal=()=>Store.all('account').filter(a=>a.type!=='비상금').reduce((a,x)=>a+Number(x.balance||0),0);
+const emerTotal=()=>Store.all('account').filter(a=>a.type==='비상금').reduce((a,x)=>a+Number(x.balance||0),0);
 function level(rate){const L=[[-1,1,'첫걸음 부부'],[0,2,'버티는 부부'],[.1,3,'아끼는 부부'],[.2,4,'알뜰 새싹 부부'],[.3,5,'알뜰 부부'],[.4,6,'단단한 알뜰 부부'],[.5,7,'튼튼한 알뜰 부부'],[.6,8,'부자 예약 부부']];let r=L[0];for(const x of L)if(rate>=x[0])r=x;return{lv:r[1],name:r[2]}}
 function ddayOf(m,day){const[y,mo]=m.split('-').map(Number);const due=new Date(y,mo-1,day);const t=new Date();t.setHours(0,0,0,0);return Math.round((due-t)/864e5)}
 
@@ -303,7 +305,7 @@ function vHome(){
     <div class="card"><h3>모은 돈 · 목표 ${man(s.goal)} 원 <span class="small">${esc(s.goalName||'')}</span></h3>
       <div class="row"><span class="big">${won(saved)}<span class="won">원</span></span><span style="align-self:end;font-weight:700">${Math.floor(goalPct)}%</span></div>
       <div class="hp"><span style="width:${goalPct}%"></span></div>
-      <div class="small">${d.sav?`이번 달 저축 +${won(d.sav)}원`:'이번 달 저축 기록이 아직 없어요'}${etaText(s.goal-saved)}</div></div>
+      <div class="small">${d.sav?`이번 달 저축 +${won(d.sav)}원`:'이번 달 저축 기록이 아직 없어요'}${etaText(s.goal-saved)}</div>${emerTotal()?`<div class="small">🛟 비상금은 따로 ${won(emerTotal())}원</div>`:''}</div>
     <div class="card"><h3>우리 재정 상태</h3>
       ${rate==null?'<div class="small">이번 달 수입을 적으면 저축률과 레벨이 나와요.</div>':`<div class="lvl"><span class="badge">Lv.${L.lv}</span><div><b>${L.name}</b><div class="small">수입 ${won(d.inc)} − 지출 ${won(d.spend)} = <b style="color:${d.inc-d.spend>=0?'var(--good)':'var(--red)'}">${d.inc-d.spend>=0?'+':''}${won(d.inc-d.spend)}</b></div></div></div>
       <div class="hp ${rate<0?'r':'g'}"><span style="width:${Math.max(3,Math.min(100,Math.abs(rate)*100))}%"></span></div>`}
@@ -341,11 +343,12 @@ function vCard(){
   ${WHO.map(w=>`<div class="row"><span><span class="who ${whoCls(w)}">${w}</span></span><span>${won(cardSpend[w]||0)}원</span></div>`).join('')}</div></div></div>`}
 
 function vSave(){
-  const s=settings(),saved=savedTotal(),acc=Store.all('account').sort((a,b)=>b.balance-a.balance);
+  const s=settings(),saved=savedTotal(),emer=emerTotal(),acc=Store.all('account').sort((a,b)=>(a.type==='비상금')-(b.type==='비상금')||b.balance-a.balance);
   const pct=s.goal?Math.min(100,saved/s.goal*100):0;
   return `<div class="view"><div class="cols"><div class="card"><h3>모은 돈 합계 <span class="r"><button type="button" class="btn ghost" data-goal="1" style="padding:2px 8px;font-size:11px">목표 바꾸기</button></span></h3>
   <div class="big">${won(saved)}<span class="won">원</span></div><div class="hp"><span style="width:${pct}%"></span></div><div class="small">목표 ${won(s.goal)}원 (${esc(s.goalName||'')}) · ${Math.floor(pct)}% · 남은 돈 ${won(Math.max(0,s.goal-saved))}원</div></div>
-  <div class="card"><h3>어떻게 쓰나요</h3><div class="small">통장·적금·투자 계좌마다 지금 잔액을 적어 두고, 한 달에 한 번 숫자만 바꿔 주세요. 매달 넣은 돈은 '저축 적기'로 따로 적으면 리포트에 나와요.</div></div></div>
+  <div class="card"><h3>🛟 비상금 <span class="small">(모은 돈에 안 들어가요)</span></h3><div class="big">${won(emer)}<span class="won">원</span></div><div class="small">${emer?'갑자기 필요한 돈을 위해 따로 두는 돈이에요.':"통장 추가할 때 종류를 '비상금'으로 고르면 여기에 모여요."}</div></div></div>
+  <div class="card"><h3>어떻게 쓰나요</h3><div class="small">통장·적금·투자 계좌마다 지금 잔액을 적어 두고, 한 달에 한 번 숫자만 바꿔 주세요. 매달 넣은 돈은 '저축 적기'로 따로 적으면 리포트에 나와요. 종류가 '비상금'인 통장은 모은 돈 합계에서 빠지고 비상금으로 따로 보여요.</div></div>
   <div class="card"><h3>통장별 잔액 <span class="r"><button type="button" class="btn" data-acc="new">＋ 통장 추가</button></span></h3>
   ${acc.length?`<div class="tblwrap"><table><tr><th>통장</th><th>누구</th><th class="m">잔액</th><th>바꾼 날</th><th></th></tr>${acc.map(a=>`<tr><td>${esc(a.name)} <span class="cat">${esc(a.type||'')}</span></td><td><span class="who ${whoCls(a.who)}">${esc(a.who)}</span></td><td class="m">${won(a.balance)}</td><td class="small">${new Date(a.t).toLocaleDateString('ko-KR')}</td><td class="m"><button type="button" class="x" data-acc="${a.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${a.id}" aria-label="지우기">✕</button></td></tr>`).join('')}</table></div>`:'<div class="empty">통장을 추가하면 모은 돈이 돼지 저금통에 쌓여요.</div>'}</div></div>`}
 
@@ -987,7 +990,7 @@ function drawHome(){
   const d=monthData(cur),saved=savedTotal(),s=settings();
   const tag=(pt,html,cls,dy,go)=>{const el=document.createElement(go?'button':'div');if(go){el.type='button';el.dataset.go=go}el.className=cls;el.innerHTML=html;el.style.left=(pt[0]/W*100)+'%';el.style.top=((pt[1]+dy)/H*100)+'%';room.appendChild(el);return el};
   const nearest=nextDue(cur);
-  const emer=Store.all('account').filter(a=>a.type==='비상금').reduce((x,a)=>x+Number(a.balance),0);
+  const emer=emerTotal();
   const tint=document.createElement('div');tint.id='nightTint';tint.className='nighttint';tint.hidden=!night();room.appendChild(tint);
   tag(P(8.9,5.9,0),'모은 돈 <b>'+man(saved)+'</b>','tag',-17,'save');
   tag(P(0,8.1,5.7),'나갈 돈 <b>'+(nearest!=null&&nearest>=0?'D-'+(nearest||'DAY'):man(d.bill))+'</b>','tag',0,'card');
