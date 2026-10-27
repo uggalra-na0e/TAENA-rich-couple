@@ -649,7 +649,15 @@ function setDlg(){const c=Sync.cfg()||{url:'',key:''};
     const draw=()=>{try{const q=qrcode(0,'L');q.addData(link);q.make();const n=q.getModuleCount();document.getElementById('qrImg').innerHTML=q.createImgTag(Math.max(2,Math.floor(220/n)),0)}catch(e){document.getElementById('qrImg').textContent='QR을 못 만들었어요. 링크 복사를 써 주세요.'}};
     if(window.qrcode)draw();else{const sc=document.createElement('script');sc.src='qrcode.js';sc.onload=draw;sc.onerror=()=>{document.getElementById('qrImg').textContent='QR을 못 만들었어요(인터넷 확인). 링크 복사를 써 주세요.'};document.head.appendChild(sc)}};
   document.getElementById('catEdit').onclick=()=>{dlg.close();setTimeout(catsDlg,50)};
-  document.getElementById('bkIn').onclick=()=>{const t=document.getElementById('bkTxt');if(t.hidden){t.hidden=false;t.value='';t.placeholder='백업 글자를 여기에 붙여넣고 다시 누르세요';return}try{const arr=JSON.parse(t.value);Store.merge(arr);Sync.push(arr);toast(arr.length+'개 불러왔어요')}catch(e){toast('백업 글자가 올바르지 않아요')}};
+  document.getElementById('bkIn').onclick=()=>{const t=document.getElementById('bkTxt');if(t.hidden){t.hidden=false;t.value='';t.placeholder='백업 글자를 여기에 붙여넣고 다시 누르세요';return}try{const all=JSON.parse(t.value);if(!Array.isArray(all))throw 0;
+    // 카드 내역처럼 새로 들어오는 지출·수입은 이미 직접 적은 것(같은 종류·금액, 날짜 하루 차이까지)과 겹치면 빼요
+    const day=d=>new Date(d+'T00:00:00').getTime()/864e5;const used=new Set();const skip=[];
+    const arr=all.filter(r=>{if(!r||r.kind!=='entry'||Store.recs[r.id])return true;
+      const hit=Store.all('entry').find(e=>!used.has(e.id)&&e.type===r.type&&Number(e.amount)===Number(r.amount)&&Math.abs(day(e.date)-day(r.date))<=1);
+      if(hit){used.add(hit.id);skip.push(r);return false}return true});
+    Store.merge(arr);Sync.push(arr);
+    if(skip.length){t.value='이미 적혀 있어서 뺀 것 '+skip.length+'개:\n'+skip.map(r=>r.date+' '+(r.memo||'')+' '+won(r.amount)+'원').join('\n')}
+    toast(arr.length+'개 불러왔어요'+(skip.length?' · 겹치는 '+skip.length+'개는 뺐어요':''))}catch(e){toast('백업 글자가 올바르지 않아요')}};
 }
 let toastT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2200)}
 
