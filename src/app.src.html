@@ -221,7 +221,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.2';
+const VERSION='1.0.3';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -464,6 +464,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.3','10/27','방 그림의 "○월 카드값"도 그 달에 카드로 쓴 돈으로'],
   ['1.0.2','10/27','총 지출 표 이름을 다시 "카드값"으로 (그 달에 카드로 쓴 돈)'],
   ['1.0.1','10/27','총 지출 옆에 지난달 총 지출·카드 사용을 작게 표시'],
   ['1.0.0','10/27','총 지출을 쓴 달 기준으로: 카드로 쓴 돈도 쓴 달에 바로 들어가요. 다음 달 카드값을 적으면 기록 안 된 결제만큼 자동으로 채워요'],
@@ -1093,7 +1094,7 @@ function drawHome(){
   const emer=emerTotal();
   const tint=document.createElement('div');tint.id='nightTint';tint.className='nighttint';tint.hidden=!night();room.appendChild(tint);
   tag(P(8.9,5.9,0),'모은 돈 <b>'+man(saved)+'</b>','tag',-17,'save');
-  tag(P(0,8.1,5.7),Number(cur.slice(5))+'월 카드값 <b>'+man(d.bill)+'</b>','tag',0,'card');
+  tag(P(0,8.1,5.7),Number(cur.slice(5))+'월 카드값 <b>'+man(spendSum(cur).bill)+'</b>','tag',0,'card').title='이 달에 카드로 쓴 돈 (청구서는 다음 달에 나가요)';
   {const T=spendSum(cur);tag(P(4.6,1.2,2.2),'현금지출 <b>'+man(T.cash)+'</b>','tag',0,'spend');tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(T.total)+'</b>','tag',0,'spend').title='현금지출 '+won(T.cash)+' + 카드 사용 '+won(T.bill)+(T.gap?' (기록 안 된 '+won(T.gap)+' 포함)':'')+' + 고정지출 '+won(T.fixed)+(T.loan?' + 대출 '+won(T.loan):'')}
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const V=verdict(cur),g=document.createElement('button');g.type='button';g.dataset.go='inc';g.className='keeptag';g.title='월급 − 총 지출(대출 포함). 수입 탭에서 목표를 바꿀 수 있어요';
