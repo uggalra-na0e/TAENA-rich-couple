@@ -211,7 +211,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.9.3';
+const VERSION='0.9.4';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -345,8 +345,8 @@ function vHome(){
     <div class="grid2">
       <div class="card halfcard"><h3>모은 돈 <span class="r small" title="목표 ${won(s.goal)}원 ${esc(s.goalName||'')}">목표 ${Math.floor(goalPct)}% ${mini('고치기','data-go="save"')}</span></h3><div class="big" style="font-size:18px">${won(saved)}<span class="won">원</span></div>
         <div class="hp" style="height:8px"><span style="width:${goalPct}%"></span></div>${emerTotal()?`<div class="small">🛟 비상금 따로 ${won(emerTotal())}원</div>`:''}
-        <hr class="half"><h3>${Number(cur.slice(5))}월 수입 ${whoBtns('data-add="수입"')}</h3>${(()=>{const iw=w=>d.es.filter(e=>e.type==='수입'&&e.who===w).reduce((a,e)=>a+Number(e.amount||0),0);const T=spendSum(cur).total,left=d.inc-T;
-          return `<div class="big" style="font-size:18px">${won(d.inc)}<span class="won">원</span></div><div class="small">${WHO.filter(w=>iw(w)).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(iw(w))}`).join(' ')||'아직 수입 기록이 없어요'}</div>${d.inc?`<div class="small">총 지출 빼고 <b style="color:${left>=0?'var(--good)':'var(--red)'}">${left>=0?'+':''}${won(left)}원</b></div>`:''}`})()}</div>
+        <hr class="half"><h3>${Number(cur.slice(5))}월 수입 ${whoBtns('data-add="수입"')}</h3>${(()=>{const iw=w=>d.es.filter(e=>e.type==='수입'&&e.who===w).reduce((a,e)=>a+Number(e.amount||0),0);const V=verdict(cur);
+          return `<div class="big" style="font-size:18px">${won(d.inc)}<span class="won">원</span></div><div class="small">${WHO.filter(w=>iw(w)).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(iw(w))}`).join(' ')||'아직 수입 기록이 없어요'}</div>${V.sal?`<div class="small">${V.ok?'⭕':'❌'} 월급 − 총 지출 <b style="color:${V.ok?'var(--good)':'var(--red)'}">${V.left>=0?'+':''}${won(V.left)}원</b></div>`:''}`})()}</div>
       ${budgetCard(cur)}
     </div>
   </div></div>
@@ -378,21 +378,29 @@ function vSpend(){
   <div class="card"><h3>${mLabel(cur)} ${spendWho==='전체'?'':spendWho+'의 '}기록 <span class="r">지출 합계 <b>${won(tot)}원</b></span></h3>${entryRows(list)}</div></div>`}
 
 // 수입 탭: 월급 / 부수입(사업·프리랜서) / 기타 로 묶어서 봐요
-const INC_GROUPS=[['💼 월급',['월급'],'월급'],['🧑‍💻 부수입',BIZ_CATS0,'3.3% 뗀 수입'],['🎁 기타',null,'기타']];
-const incGroup=c=>INC_GROUPS.find(([,l])=>l&&l.includes(c))||INC_GROUPS[2];
+// 우리 원칙: 월급으로만 살림을 해결해요. 월급 − 총 지출이 0 이상이면 성공한 달, 부수입은 덤.
+// 월급 = 분류 '월급' + 세금 탭에 주급(고정 프리랜서)을 정해 둔 사람의 '3.3% 뗀 수입'
+const isSalary=e=>e.cat==='월급'||(e.cat==='3.3% 뗀 수입'&&!!(taxCfg()[e.who]||{}).weekly);
+const INC_GROUPS=[['💼 월급',isSalary,'월급'],['🧑‍💻 부수입',e=>BIZ_CATS0.includes(e.cat),'안 뗀 부업수입'],['🎁 기타',()=>true,'기타']];
+const incGroup=e=>INC_GROUPS.find(([,f])=>f(e));
+const salaryOf=m=>monthData(m).es.filter(e=>e.type==='수입'&&isSalary(e)).reduce((a,e)=>a+Number(e.amount||0),0);
+const verdict=m=>{const sal=salaryOf(m),T=spendSum(m).total;return{sal,T,left:sal-T,ok:sal-T>=0}};
 function vIncome(){
   const d=monthData(cur),es=d.es.filter(e=>e.type==='수입');const W=WHO.filter(w=>w!=='같이'||es.some(e=>e.who==='같이'));
-  const sumOf=(g,w)=>es.filter(e=>incGroup(e.cat)===g&&(!w||e.who===w)).reduce((a,e)=>a+Number(e.amount||0),0);
-  const T=spendSum(cur).total,left=d.inc-T;
+  const sumOf=(g,w)=>es.filter(e=>incGroup(e)===g&&(!w||e.who===w)).reduce((a,e)=>a+Number(e.amount||0),0);
+  const V=verdict(cur),side=d.inc-V.sal;
   const prev=monthData(addMonth(cur,-1)).inc;
   return `<div class="view"><div class="toolbar">${monthNav()}<span style="margin-left:auto"></span>${INC_GROUPS.map(([l,,c])=>`<button type="button" class="btn" data-add="수입" data-cat="${c}">＋ ${l.split(' ')[1]}</button>`).join(' ')}</div>
   <div class="cols"><div class="card"><h3>${mLabel(cur)} 수입 <span class="r big" style="font-size:18px">${won(d.inc)}원</span></h3>
   <div class="tblwrap"><table class="sumtbl"><tr><th></th>${W.map(w=>`<th class="m"><span class="who ${whoCls(w)}">${w}</span></th>`).join('')}<th class="m">합계</th></tr>
   ${INC_GROUPS.map(g=>`<tr><td>${g[0]}</td>${W.map(w=>`<td class="m">${won(sumOf(g,w))}</td>`).join('')}<td class="m"><b>${won(sumOf(g))}</b></td></tr>`).join('')}
   <tr class="tot"><td><b>합계</b></td>${W.map(w=>`<td class="m">${won(es.filter(e=>e.who===w).reduce((a,e)=>a+Number(e.amount||0),0))}</td>`).join('')}<td class="m"><b>${won(d.inc)}</b></td></tr></table></div>
-  <div class="small" style="margin-top:6px">부수입 = '3.3% 뗀 수입' + '안 뗀 부업수입' (세금 탭에 그대로 쓰여요)</div></div>
-  <div class="card"><h3>이번 달 남는 돈</h3><div class="row"><span>수입</span><span>${won(d.inc)}원</span></div><div class="row"><span>총 지출</span><span>−${won(T)}원</span></div>
-  <div class="row"><b>남는 돈</b><b style="color:${left>=0?'var(--good)':'var(--red)'}">${left>=0?'+':''}${won(left)}원</b></div>
+  <div class="small" style="margin-top:6px">월급 = '월급' + 영이처럼 주급 정해 둔 프리랜서의 '3.3% 뗀 수입' · 부수입 = 그 밖의 부업수입</div></div>
+  <div class="card"><h3>이번 달 성적 <span class="r small">월급으로만 살았나요?</span></h3>
+  <div class="big" style="color:${V.ok?'var(--good)':'var(--red)'}">${V.sal?(V.ok?'⭕ 성공한 달':'❌ 실패한 달'):'월급 기록 전'}</div>
+  <div class="row"><span>월급</span><span>${won(V.sal)}원</span></div><div class="row"><span>총 지출</span><span>−${won(V.T)}원</span></div>
+  <div class="row"><b>월급 − 총 지출</b><b style="color:${V.ok?'var(--good)':'var(--red)'}">${V.left>=0?'+':''}${won(V.left)}원</b></div>
+  <div class="row small"><span>부수입·기타 (덤, 성적에 안 들어가요)</span><span>+${won(side)}원</span></div>
   <div class="small" style="margin-top:6px">지난달 수입 ${won(prev)}원${prev?` · ${d.inc>=prev?'▲':'▼'} ${won(Math.abs(d.inc-prev))}원`:''}</div></div></div>
   <div class="card"><h3>${mLabel(cur)} 수입 기록 <span class="r small">${es.length}건</span></h3>${es.length?entryRows(sortDesc(es)):'<div class="small">아직 없어요. 위 ＋ 월급 / ＋ 부수입 버튼으로 적어요.</div>'}</div></div>`}
 
@@ -429,6 +437,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.9.4','10/27','월급으로만 성적 매기기: 월급 − 총 지출 ≥ 0이면 성공한 달, 부수입은 덤으로 따로'],
   ['0.9.3','10/27','수입 탭 추가(대출금 옆): 월급·부수입·기타로 나눠 보기, 주니·영이 따로, 남는 돈'],
   ['0.9.2','10/27','칸마다 작은 적기 버튼: 총 지출 ＋주니/＋영이, 곧 나갈 돈 등록, 모은 돈 고치기, 수입 ＋주니/＋영이'],
   ['0.9.1','10/27','모은 돈 칸을 반으로 나눠 아래에 이번 달 수입(주니·영이, 총 지출 빼고 남은 돈)'],
