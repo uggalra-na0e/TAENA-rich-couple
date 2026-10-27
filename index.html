@@ -232,7 +232,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.12';
+const VERSION='1.0.13';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -466,7 +466,7 @@ function vCard(){
   <div class="cols"><div class="card"><h3>${mLabel(cur)} 카드값 <span class="r big" style="font-size:18px">${won(billW)}원</span></h3>
   <div class="small" style="margin-bottom:6px">그 달에 카드로 쓴 돈이에요 (방 그림·총 지출 표의 카드값과 같은 숫자).${fxT?` 아래 카드 고정지출 ${won(fxT)}원은 총 지출의 '고정지출' 줄에서 세요.`:''}</div>
   ${list.length?entryRows(list):'<div class="empty">이 달에 카드로 쓴 기록이 없어요. 결제 알림이 자동으로 들어오거나 ＋ 카드로 쓴 돈으로 적어요.</div>'}
-  ${FL.length?`<div class="small" style="margin:8px 0 2px"><b>🔁 카드로 나가는 고정지출</b> (고정지출 탭과 같은 항목)</div><div class="tblwrap"><table>${FL.map(x=>`<tr><td class="dcell"><span class="dnum">${x.f.day}일</span></td><td>${esc(x.f.name)} <span class="cat">고정지출</span></td><td><span class="who ${whoCls(x.f.who)}">${esc(x.f.who)}</span></td><td class="m">−${won(x.f.amount)}</td></tr>`).join('')}</table></div>`:''}
+  ${FL.length?`<div class="small" style="margin:8px 0 2px"><b>🔁 카드로 나가는 고정지출</b> (고정지출 탭과 같은 항목) <span class="r" style="float:right">합계 <b>${won(fxT)}원</b></span></div><div class="tblwrap"><table>${FL.map(x=>`<tr><td class="dcell"><span class="dnum">${x.f.day}일</span></td><td>${esc(x.f.name)} <span class="cat">고정지출</span></td><td><span class="who ${whoCls(x.f.who)}">${esc(x.f.who)}</span></td><td class="m">−${won(x.f.amount)}</td></tr>`).join('')}</table></div>`:''}
   ${T.gap?`<div class="small" style="margin-top:6px">＋ 청구서와 차이 ${won(T.gap)}원 (알림이 안 잡힌 결제) 포함</div>`:''}</div>
   <div class="card"><h3>청구서 맞춰 보기 <span class="small">(${Number(nm.slice(5))}월에 나가는 카드값)</span></h3>
   ${nb.length?`<div class="tblwrap"><table><tr><th>결제일</th><th>누구</th><th>카드</th><th class="m">청구 금액</th><th></th></tr>${nb.sort((a,b)=>a.day-b.day).map(b=>`<tr><td>${Number(nm.slice(5))}/${b.day}</td><td><span class="who ${whoCls(b.who)}">${esc(b.who)}</span></td><td>${esc(b.card)}${b.memo?` <span class="cat">${esc(b.memo)}</span>`:''}</td><td class="m">${won(b.amount)}</td><td class="m"><button type="button" class="x" data-bill="${b.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${b.id}" aria-label="지우기">✕</button></td></tr>`).join('')}</table></div>`:`<div class="small">카드 앱에서 ${mLabel(cur)} 사용분 청구 금액(${Number(nm.slice(5))}월 결제)이 나오면 ＋ 청구서로 적어 주세요. 기록보다 청구서가 많으면 그 차이를 ${Number(cur.slice(5))}월 카드값에 자동으로 더해요.</div>`}
@@ -496,6 +496,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.13','10/27','카드값 탭: 카드로 나가는 고정지출 합계 표시'],
   ['1.0.12','10/27','글자 크게 쓰는 폰에서도 한 칸씩 쌓이게'],
   ['1.0.11','10/27','폰 화면 읽기 쉽게: 모은 돈·수입·예산 한 칸씩, 최근 기록 숫자 겹침 고침, 방 그림 달 표시 작게, 적기 버튼 작게'],
   ['1.0.10','10/27','숫자가 아주 커져도 칸이 안 넓어지게 글자 크기 자동 줄이기'],
@@ -578,7 +579,7 @@ function vWish(){
   <div class="card"><h3>보낸 건의 <span class="r small">프로그램 버전 ${VERSION}</span></h3>${ws.length?ws.map(w=>`<div class="wish"><div><span class="who ${whoCls(w.who)}">${esc(w.who)}</span><span class="small">${new Date(w.created||w.t).toLocaleDateString('ko-KR')}</span><span class="st-badge ${w.status||'new'}">${S[w.status||'new']}</span></div><div>${esc(w.text)}</div>${w.reply?`<div class="small">↳ ${esc(w.reply)}</div>`:''}</div>`).join(''):'<div class="empty">아직 보낸 건의가 없어요.</div>'}</div></div></div>`}
 
 // 숫자가 아주 커져도 칸이 넓어지지 않게: 넘치면 글자를 줄여서 맞춰요 (최소 7px)
-function fitWide(root){for(const el of (root||document).querySelectorAll('.sumtbl,.side .tblwrap>table,.big,.halfcard .small')){el.style.fontSize='';if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';
+function fitWide(root){for(const el of (root||document).querySelectorAll('.sumtbl,.view .tblwrap>table,#dlg .tblwrap>table,.big,.halfcard .small')){el.style.fontSize='';if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';
   const box=el.tagName==='TABLE'?el.parentElement:el;let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
   while(box.scrollWidth>box.clientWidth+1&&fs>7&&n++<30){fs-=.5;el.style.setProperty('font-size',fs+'px','important');if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.setProperty('font-size',fs+'px','important')}}}
 addEventListener('resize',()=>{clearTimeout(fitWide.t);fitWide.t=setTimeout(()=>fitWide(),150)});
