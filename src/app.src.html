@@ -184,7 +184,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.7.2';
+const VERSION='0.7.3';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -370,12 +370,31 @@ function vReport(){
   <div class="trend">${ds.map((x,i)=>`<div class="c"><div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;height:100%">${[['#f29bb6',x.spend],['#4fae6a',x.inc],['var(--coin)',x.sav]].map(([c,v])=>v?`<i title="${won(v)}" style="display:block;width:12px;height:${Math.max(3,v/mx*100)}%;background:${c};border:2px solid var(--line)"></i>`:'<i style="display:block;width:12px"></i>').join('')}</div><span>${Number(ms[i].slice(5))}월</span></div>`).join('')}</div></div>
   <div class="card"><h3>${mLabel(cur)} 분류별 지출</h3>${rows.length?`<div class="tblwrap"><table><tr><th>분류</th><th class="m">주니</th><th class="m">영이</th><th class="m">같이</th><th class="m">합계</th></tr>${grows.map(([g,v,subs])=>`<tr class="grp"><td><b>${g}</b> <span class="small">${d.spend?Math.round(tot(v)/d.spend*100):0}%</span></td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m"><b>${won(tot(v))}</b></td></tr>${subs.map(([c,v])=>`<tr class="sub"><td>└ ${esc(c)}</td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m">${won(tot(v))}</td></tr>`).join('')}`).join('')}<tr><td><b>합계</b></td><td class="m">${won(d.byWho.주니)}</td><td class="m">${won(d.byWho.영이)}</td><td class="m">${won(d.byWho.같이)}</td><td class="m"><b>${won(d.spend)}</b></td></tr></table></div>`:'<div class="empty">이 달 지출 기록이 없어요.</div>'}</div></div></div>`}
 
+// 업데이트 기록 (새 버전마다 맨 위에 추가)
+const CHANGES=[
+  ['0.7.3','10/27','건의함에 업데이트 기록 추가'],
+  ['0.7.2','10/27','총 지출: 카드값을 아직 안 적었으면 카드 고정지출도 포함'],
+  ['0.7.1','10/27','대출금 탭 추가 (남은 원금, 냈어요, 다 갚는 날 예상). 총 지출에 대출 포함'],
+  ['0.7','10/27','분류에 배달 추가. 리포트를 대분류(먹는 데·생활·교통 등)로 묶어 보기'],
+  ['0.6.9','10/27','고정지출 나가는 방법: 카드(카드값에 포함) / 계좌 자동이체 / 현금·직접 이체'],
+  ['0.6.7','10/27','방 화면 "지출" → "총 지출" (현금지출 + 카드값 + 고정지출, 겹치는 건 빼고)'],
+  ['0.6.6','10/27','탭 순서 변경: 카드값 · 현금지출 · 고정지출. 지출 → 현금지출'],
+  ['0.6.5','10/27','방 화면에 고정지출 표시. "나갈 돈" → "○월 카드값"'],
+  ['0.6.4','10/27','휴지통 (설정 → 휴지통 열기, 지운 기록 살리기)'],
+  ['0.6.3','10/27','비상금을 모은 돈과 따로 보기'],
+  ['0.6.2','10/27','입금 문자 → 수입. 부부끼리·내 계좌끼리 이체는 빼기. 카드 내역 붙여넣을 때 이미 적은 건 빼기'],
+  ['0.6.1','10/27','영이 주급 프리랜서 세금 계산. 날짜·지남 표시 줄 맞춤'],
+  ['0.6','10/27','결제 문자·쿠팡 알림 붙여넣기로 자동 채우기, 폰 자동 기록 준비'],
+  ['0.5','10/27','폰에서 쓰기 편하게 (＋지출 버튼, 연결 QR)'],
+  ['0.4.2','10/27','웹 주소로 이사 (새로고침만 하면 업데이트)'],
+  ['0.4','10/26','캐릭터 걷기·대화·꾸미기, 상태 메시지, 데스크톱 위젯']];
 function vWish(){
   const ws=Store.all('wish').sort((a,b)=>b.t-a.t);const S={new:'접수',doing:'만드는 중',done:'반영됨'};
   return `<div class="view"><div class="cols"><div class="card"><h3>이런 기능 있었으면 💌</h3>
   <div class="small" style="margin-bottom:8px">불편한 점이나 바라는 기능을 적어 주세요. Claude가 읽고 다음 버전에 고쳐 드려요.</div>
   <textarea id="wishTxt" placeholder="예) 카드값 결제일 하루 전에 알려 주면 좋겠어요"></textarea>
   <div class="add"><button type="button" class="btn" data-wish="add">보내기</button></div></div>
+  <div class="card"><h3>업데이트 기록 <span class="r small">지금 버전 ${VERSION}</span></h3><div class="tblwrap" style="max-height:220px;overflow:auto"><table>${CHANGES.map(([v,d,t])=>`<tr><td style="white-space:nowrap"><b>v${v}</b> <span class="small">${d}</span></td><td class="small">${esc(t)}</td></tr>`).join('')}</table></div><div class="small" style="margin-top:4px">예전 버전으로 되돌리고 싶으면 Claude에게 "v0.6.9로 돌려줘"처럼 말해 주세요. 돈 기록은 그대로 남아요.</div></div>
   <div class="card"><h3>보낸 건의 <span class="r small">프로그램 버전 ${VERSION}</span></h3>${ws.length?ws.map(w=>`<div class="wish"><div><span class="who ${whoCls(w.who)}">${esc(w.who)}</span><span class="small">${new Date(w.created||w.t).toLocaleDateString('ko-KR')}</span><span class="st-badge ${w.status||'new'}">${S[w.status||'new']}</span></div><div>${esc(w.text)}</div>${w.reply?`<div class="small">↳ ${esc(w.reply)}</div>`:''}</div>`).join(''):'<div class="empty">아직 보낸 건의가 없어요.</div>'}</div></div></div>`}
 
 function render(){
