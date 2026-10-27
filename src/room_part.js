@@ -33,7 +33,7 @@ poly([P(0,0,0),P(N,0,0),P(N,0,WH),P(0,0,WH)],C('#c4e2ea'));
 for(let y=0.5;y<N;y+=1)for(let z=0.6;z<WH;z+=1){const p=P(0,y+((z*2|0)%2?.5:0),z);px(p[0],p[1],C('#b6d8e3'));}
 for(let x=0.5;x<N;x+=1)for(let z=0.6;z<WH;z+=1){const p=P(x+((z*2|0)%2?.5:0),0,z);px(p[0],p[1],C('#a7cfdc'));}
 // wall top caps
-outline([P(0,N,WH),P(0,0,WH),P(N,0,WH)],K);
+line(P(0,N,WH),P(0,0,WH),K);line(P(0,0,WH),P(N,0,WH),K);
 line(P(0,0,0),P(0,0,WH),C('#8fb9c7'));
 // baseboard
 poly([P(0,0,0),P(0,N,0),P(0,N,.35),P(0,0,.35)],C('#fff6e8'));
