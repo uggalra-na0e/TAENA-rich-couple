@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.21';
+const VERSION='1.0.22';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -498,6 +498,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.22','10/28','적기 창에 🖼 스샷 넣기: 결제 알림·문자 캡처를 읽어서 채우기(베타)'],
   ['1.0.21','10/28','롯데 로카페이 "결제" 알림(대중교통 등)도 자동 기록, 카드값 안내 문자는 무시'],
   ['1.0.20','10/28','정해 둔 계좌로 보낸 이체완료 문자는 현금지출로 자동 기록(설정 → 자동으로 적을 이체)'],
   ['1.0.19','10/27','앱을 열면 항상 우리집부터(폰 뒤로가기가 우리집으로 오게)'],
@@ -847,10 +848,10 @@ function parsePays(raw){
   if(parts.length>1)return parts;const one=parsePay(raw);return one?[one]:[]}
 function setChip(name,v){const box=document.querySelector(`[data-chips="${name}"]`);if(!box)return;const b=[...box.querySelectorAll('button')].find(x=>x.dataset.c===v);if(b)box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))}
 function dupEntry(p){return Object.values(Store.recs).some(r=>!r.del&&r.kind==='entry'&&r.type===p.type&&r.amount===p.amount&&r.date===p.date)}
-function smsBox(){return `<details class="sms" id="smsBox"><summary>📩 문자·쿠팡 알림 붙여넣기 · 📷 영수증</summary>
+function smsBox(){return `<details class="sms" id="smsBox"><summary>📩 문자·쿠팡 알림 붙여넣기 · 📷 영수증 · 🖼 스샷</summary>
   <div class="small">카드 결제·은행 입금 문자나 카톡 알림, 쿠팡 결제 알림을 길게 눌러 복사한 뒤 여기에 붙여넣으면 금액·가게·날짜가 채워져요. 여러 개를 한 번에 붙여도 돼요.</div>
   <textarea id="fSms" placeholder="여기에 붙여넣기" style="min-height:70px"></textarea>
-  <div class="toolbar"><button type="button" class="btn ghost" id="smsPaste">복사한 글자 붙여넣기</button><label class="btn ghost" style="cursor:pointer">📷 영수증 사진 (베타)<input type="file" id="rcpt" accept="image/*" capture="environment" hidden></label></div><div class="small" id="smsMsg"></div></details>`}
+  <div class="toolbar"><button type="button" class="btn ghost" id="smsPaste">복사한 글자 붙여넣기</button><span style="display:flex;gap:6px;flex-wrap:nowrap"><label class="btn ghost" style="cursor:pointer;white-space:nowrap">📷 영수증 찍기<input type="file" id="rcpt" accept="image/*" capture="environment" hidden></label><label class="btn ghost" style="cursor:pointer;white-space:nowrap">🖼 스샷 넣기<input type="file" id="shot" accept="image/*" hidden></label></span></div><div class="small" id="smsMsg"></div></details>`}
 // 영수증 글자 → {amount,date,memo}. 합계·결제금액 줄의 숫자를 우선, 없으면 가장 큰 금액
 function parseReceipt(raw){const s=String(raw||'').replace(/\r/g,'');const lines=s.split('\n').map(x=>x.trim()).filter(Boolean);const num=x=>Number(String(x).replace(/[^0-9]/g,''));
   let amount=0;for(const l of lines){if(/합\s*계|총\s*액|결제\s*금액|받을\s*금액|청구\s*금액|승인\s*금액|카드\s*결제|총\s*결제/.test(l.replace(/\s+/g,' '))){const ns=(l.match(/[0-9]{1,3}(?:[,.][0-9]{3})+|[0-9]{4,}/g)||[]).map(num);if(ns.length)amount=Math.max(amount,...ns)}}
@@ -865,6 +866,14 @@ function loadTess(){if(window.Tesseract)return Promise.resolve();if(tessP)return
 function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const msg=document.getElementById('smsMsg');
   const fill=p=>{const T=p.type;setChip('type',T);document.getElementById('catBox').innerHTML=catChips(T,p.cat||CATS[T][0]);document.getElementById('payBox').hidden=T!=='지출';
     document.getElementById('fAmt').value=won(p.amount);document.getElementById('fMemo').value=p.memo;document.getElementById('fDate').value=p.date};
+  // 스샷: 결제 알림·문자·은행 화면 캡처를 읽어서 붙여넣기 칸에 넣고, 못 알아보면 영수증처럼 읽어요
+  const sh=document.getElementById('shot');if(sh)sh.onchange=async()=>{const f=sh.files&&sh.files[0];if(!f)return;
+    msg.textContent='스샷 글자 읽는 중… (처음엔 30초쯤 걸려요)';
+    try{await loadTess();const r=await Tesseract.recognize(f,'kor+eng');const txt=r.data.text.replace(/[ \t]+/g,' ').trim();
+      if(parsePays(txt).length){ta.value=txt;document.getElementById('smsBox').open=true;run();msg.innerHTML=msg.innerHTML+'<br>스샷에서 읽었어요(베타). <b>금액·날짜가 맞는지 꼭 확인</b>해 주세요.';return}
+      const p=parseReceipt(txt);if(!p){msg.textContent='금액을 못 찾았어요. 직접 적어 주세요.';return}
+      fill(p);msg.innerHTML='스샷에서 채웠어요(베타). <b>금액·날짜가 맞는지 꼭 확인</b>하고 저장해 주세요.'}
+    catch(e){msg.textContent='스샷을 못 읽었어요. 인터넷 연결을 확인하거나 직접 적어 주세요.'}finally{sh.value=''}};
   const rc=document.getElementById('rcpt');if(rc)rc.onchange=async()=>{const f=rc.files&&rc.files[0];if(!f)return;
     msg.textContent='영수증 읽는 중… (처음엔 글자 사전을 받느라 30초쯤 걸려요)';
     try{await loadTess();const r=await Tesseract.recognize(f,'kor+eng');const p=parseReceipt(r.data.text);
