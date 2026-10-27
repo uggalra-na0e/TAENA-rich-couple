@@ -115,7 +115,7 @@ dialog::backdrop{background:rgba(58,42,46,.35)}
 .dh{background:var(--plum);color:var(--paper);font-weight:700;padding:6px 10px;border-bottom:3px solid var(--line);display:flex}
 .dh .x{color:var(--paper);margin-left:auto}
 .db{padding:12px;display:grid;gap:10px}
-[hidden]{display:none!important}
+[hidden]{display:none!important}.homebtn{padding:4px 10px;font-size:12px}
 label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:700}
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
@@ -207,7 +207,7 @@ html.widget .fab{display:none}
 <div class="win">
   <div class="bar">
     <canvas class="coin" id="ico" width="9" height="9"></canvas>
-    <b>주니와 영이 부자되자</b>
+    <b data-v="home" style="cursor:pointer" title="우리집으로">주니와 영이 부자되자</b>
     <span class="sp"></span>
     <button class="iconbtn" id="instBtn" hidden title="폰·PC에 앱으로 설치">📲 앱 설치</button>
     <button class="iconbtn" id="meBtn" title="지금 쓰는 사람"></button>
@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.15';
+const VERSION='1.0.16';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -497,6 +497,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.16','10/27','모든 탭에 🏠 우리집 버튼, 맨 위 제목 눌러도 우리집으로'],
   ['1.0.15','10/27','수입·저축 적을 때 결제(카드·현금) 칸 안 보이게'],
   ['1.0.14','10/27','전체 기록 창 고르기 버튼 다섯 칸 같은 크기로'],
   ['1.0.13','10/27','카드값 탭: 카드로 나가는 고정지출 합계 표시'],
@@ -595,6 +596,7 @@ function render(){
   main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,loan:vFixed,inc:vIncome,save:vSave,report:vReport,tax:vTax,wish:vWish}[view]||vHome)();
   if(keepWish&&document.getElementById('wishTxt'))document.getElementById('wishTxt').value=keepWish;
   if(view==='home')drawHome();
+  else{const v=main.querySelector('.view');if(v){const hb=document.createElement('button');hb.type='button';hb.className='btn ghost homebtn';hb.dataset.v='home';hb.textContent='🏠 우리집';const tb=v.querySelector('.toolbar');if(tb)tb.prepend(hb);else{const d=document.createElement('div');d.className='toolbar';d.appendChild(hb);v.prepend(d)}}}
   fitWide(main);
 }
 
@@ -967,7 +969,7 @@ let toastT;function toast(m){const t=document.getElementById('toast');t.textCont
 
 /* ---------- 클릭 ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('button,[data-go]');if(!t)return;const ds=t.dataset;
+  const t=e.target.closest('button,[data-go],[data-v]');if(!t)return;const ds=t.dataset;
   if(ds.v){view=ds.v;ls.set('jy.view',view);render()}
   else if(ds.mon){cur=addMonth(cur,Number(ds.mon));render()}
   else if(ds.pickadd){preWho=ds.who||null;addPicker()}
