@@ -120,6 +120,8 @@ input[type=text],input[type=number],input[type=date],input[type=month],input[typ
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
 .tb{margin:4px 0}.keeptag{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fffaf0;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:3px 6px;font:inherit;font-size:10px;line-height:1.2;cursor:pointer;text-align:left;min-width:96px}.keeptag i{display:block;height:5px;border:1px solid var(--line);background:#fff}.keeptag s{display:block;height:100%}
+.recent>h3{height:18px;overflow:visible}.recent>h3 .who{line-height:1.2}
+.cardnote{font-size:10.5px;font-weight:400;margin-left:8px;letter-spacing:0;white-space:nowrap;line-height:1;vertical-align:middle;display:inline-block}
 .sechead{margin-top:14px;padding-top:10px;border-top:2px dashed #c9b28d}.sechead b{font-size:15px}
 .catgrid .crw{display:flex;gap:6px;align-items:flex-start;padding:3px 0;border-bottom:1px dashed #e3d3b8}.catgrid .crw:last-child{border-bottom:0}.catgrid .cg{font-size:11px;color:#7a6a55;flex:0 0 96px;white-space:nowrap;padding-top:4px}.catgrid .chips{flex:1;gap:4px 5px}
 @media(max-width:520px){.catgrid .cg{flex-basis:78px;font-size:10px;white-space:normal}}
@@ -219,7 +221,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.9.8';
+const VERSION='0.9.9';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -352,7 +354,7 @@ function vHome(){
   <div class="side">
     ${(()=>{const T=spendSum(cur),B=T.by;const hasT=B.total.같이>0;
       const row=(l,o,sub,cls)=>`<tr class="${cls||''}"><td>${l}${sub?`<div class="small">${sub}</div>`:''}</td><td class="m">${won(o.주니)}</td><td class="m">${won(o.영이)}</td>${hasT?`<td class="m">${won(o.같이)}</td>`:''}<td class="m"><b>${won(o.all)}</b></td></tr>`;
-      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span></div>
+      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span>${(()=>{const cu=monthData(cur).es.filter(e=>e.type==='지출'&&e.pay==='카드'&&!e.fixedRef).reduce((a,e)=>a+Number(e.amount||0),0);return cu?`<span class="small cardnote" title="카드로 쓴 돈은 다음 달 카드값으로 총 지출에 들어가요(두 번 안 세요)">💳 이번 달 카드 사용 ${won(cu)}원 → ${Number(addMonth(cur,1).slice(5))}월 카드값</span>`:''})()}</div>
       <div class="tblwrap"><table class="sumtbl"><tr><th></th><th class="m"><span class="who j">주니</span></th><th class="m"><span class="who y">영이</span></th>${hasT?'<th class="m"><span class="who t">같이</span></th>':''}<th class="m">합계</th></tr>
       ${row('<span class="ic">💵</span>현금지출',B.cash)}${row('<span class="ic">💳</span>카드값',B.bill)}${row('<span class="ic">🔁</span>고정지출',B.fixed)}${T.loan?row('<span class="ic">🏦</span>대출',B.loan):''}${row('<b>총 지출</b>',B.total,'','tot')}</table></div>
 </div>`})()}
@@ -457,6 +459,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.9.9','10/27','총 지출 옆에 "이번 달 카드 사용 ○원 → 다음 달 카드값" 참고 표시'],
   ['0.9.8','10/27','폰에서 칸이 화면 오른쪽 밖으로 삐져나오던 것 고침(좁은 폰·글자 큰 폰)'],
   ['0.9.7','10/27','대출금 탭을 고정지출 탭 안으로 합침, 방 그림 벽 위 세모 검은 줄 없앰, 방 오른쪽 아래에 100만원 남기기 목표 표시'],
   ['0.9.6','10/27','분류를 대분류 → 소분류로 (적기 창·분류 바꾸기 창 모두 대분류마다 한 줄), 소분류 몇 개 추가. 건의함 탭은 설정 안으로'],
