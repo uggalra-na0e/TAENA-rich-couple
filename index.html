@@ -115,6 +115,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
+.bud{margin:6px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -184,7 +185,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.7.3';
+const VERSION='0.8';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -308,6 +309,8 @@ function vHome(){
         ${d.bills.length?d.bills.map(b=>`<div class="small">${esc(b.who)} ${esc(b.card)} ${won(b.amount)} · ${b.day}일</div>`).join(''):'<div class="small">카드값 탭에서 이번 달 청구 금액을 적어 주세요.</div>'}</div>
     </div>
     ${upcomingCard()}
+    ${cur===ym(today())&&new Date().getDate()<=7?reviewCard(addMonth(cur,-1),'지난달('+Number(addMonth(cur,-1).slice(5))+'월) 돌아보기'):''}
+    ${(()=>{const R=budgetRows(cur).filter(x=>x.s>=x.b*.8);return R.length?`<div class="card"><h3>💸 예산 알림</h3>${R.map(x=>`<div class="row"><span>${esc(x.c)} ${x.s>x.b?'<b style="color:var(--red)">넘음</b>':'<b style="color:var(--warn)">80% 넘게 씀</b>'}</span><span class="small">${won(x.s)} / ${won(x.b)}</span></div>`).join('')}</div>`:''})()}
     <div class="card"><h3>모은 돈 · 목표 ${man(s.goal)} 원 <span class="small">${esc(s.goalName||'')}</span></h3>
       <div class="row"><span class="big">${won(saved)}<span class="won">원</span></span><span style="align-self:end;font-weight:700">${Math.floor(goalPct)}%</span></div>
       <div class="hp"><span style="width:${goalPct}%"></span></div>
@@ -365,13 +368,14 @@ function vReport(){
   const tot=v=>v.주니+v.영이+v.같이;const rows=Object.entries(by).sort((a,b)=>tot(b[1])-tot(a[1]));
   const G={};for(const[c,v]of rows){const g=catGroup(c);G[g]=G[g]||[{주니:0,영이:0,같이:0},[]];for(const w of WHO)G[g][0][w]+=v[w];G[g][1].push([c,v])}
   const grows=Object.entries(G).map(([g,[v,subs]])=>[g,v,subs]).sort((a,b)=>tot(b[1])-tot(a[1]));
-  return `<div class="view"><div class="toolbar">${monthNav()}</div><div class="cols">
+  return `<div class="view"><div class="toolbar">${monthNav()}</div>${reviewCard(cur)}<div class="cols">${budgetCard(cur)}</div><div class="cols">
   <div class="card"><h3>최근 6개월</h3><div class="legend"><span><i style="background:#f29bb6"></i>지출</span><span><i style="background:#4fae6a"></i>수입</span><span><i style="background:var(--coin)"></i>저축</span></div>
   <div class="trend">${ds.map((x,i)=>`<div class="c"><div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;height:100%">${[['#f29bb6',x.spend],['#4fae6a',x.inc],['var(--coin)',x.sav]].map(([c,v])=>v?`<i title="${won(v)}" style="display:block;width:12px;height:${Math.max(3,v/mx*100)}%;background:${c};border:2px solid var(--line)"></i>`:'<i style="display:block;width:12px"></i>').join('')}</div><span>${Number(ms[i].slice(5))}월</span></div>`).join('')}</div></div>
   <div class="card"><h3>${mLabel(cur)} 분류별 지출</h3>${rows.length?`<div class="tblwrap"><table><tr><th>분류</th><th class="m">주니</th><th class="m">영이</th><th class="m">같이</th><th class="m">합계</th></tr>${grows.map(([g,v,subs])=>`<tr class="grp"><td><b>${g}</b> <span class="small">${d.spend?Math.round(tot(v)/d.spend*100):0}%</span></td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m"><b>${won(tot(v))}</b></td></tr>${subs.map(([c,v])=>`<tr class="sub"><td>└ ${esc(c)}</td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m">${won(tot(v))}</td></tr>`).join('')}`).join('')}<tr><td><b>합계</b></td><td class="m">${won(d.byWho.주니)}</td><td class="m">${won(d.byWho.영이)}</td><td class="m">${won(d.byWho.같이)}</td><td class="m"><b>${won(d.spend)}</b></td></tr></table></div>`:'<div class="empty">이 달 지출 기록이 없어요.</div>'}</div></div></div>`}
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8','10/27','분류별 한 달 예산(넘으면 빨간불), 달마다 돌아보기(매달 1~7일엔 우리집에 지난달 요약), 영수증 사진으로 채우기(베타)'],
   ['0.7.3','10/27','건의함에 업데이트 기록 추가'],
   ['0.7.2','10/27','총 지출: 카드값을 아직 안 적었으면 카드 고정지출도 포함'],
   ['0.7.1','10/27','대출금 탭 추가 (남은 원금, 냈어요, 다 갚는 날 예상). 총 지출에 대출 포함'],
@@ -388,6 +392,29 @@ const CHANGES=[
   ['0.5','10/27','폰에서 쓰기 편하게 (＋지출 버튼, 연결 QR)'],
   ['0.4.2','10/27','웹 주소로 이사 (새로고침만 하면 업데이트)'],
   ['0.4','10/26','캐릭터 걷기·대화·꾸미기, 상태 메시지, 데스크톱 위젯']];
+/* ---------- 예산·돌아보기 ---------- */
+// 분류별 한 달 예산은 settings.budgets {분류: 금액}. 그 달 지출 기록(카드·현금 모두) 합계와 비교
+function catSpend(m){const by={};for(const e of monthData(m).es)if(e.type==='지출')by[e.cat]=(by[e.cat]||0)+Number(e.amount||0);return by}
+function budgetRows(m){const b=settings().budgets||{},by=catSpend(m);return Object.entries(b).filter(([,v])=>Number(v)>0).map(([c,v])=>({c,b:Number(v),s:by[c]||0})).sort((a,b)=>b.s/b.b-a.s/a.b)}
+function budgetCard(m){const R=budgetRows(m);
+  return `<div class="card"><h3>${mLabel(m)} 예산 <span class="r"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px;box-shadow:2px 2px 0 var(--line)" data-budget="1">예산 정하기</button></span></h3>${R.length?R.map(x=>{const pc=x.s/x.b*100,over=x.s>x.b,warn=pc>=80;
+    return `<div class="bud"><div class="row"><span>${esc(x.c)} ${over?'<b style="color:var(--red)">🚨 넘음</b>':warn?'<b style="color:var(--warn)">⚠ 거의 다 씀</b>':''}</span><span class="small">${won(x.s)} / ${won(x.b)}원</span></div><div class="hp" style="height:10px"><span style="width:${Math.min(100,pc)}%;background:${over?'var(--red)':warn?'var(--warn)':'var(--good)'}"></span></div><div class="small">${over?won(x.s-x.b)+'원 넘었어요':'남은 돈 '+won(x.b-x.s)+'원'}</div></div>`}).join('')
+    :'<div class="empty">식비·배달처럼 분류마다 한 달 예산을 정하면, 쓸 때마다 얼마나 남았는지 보여 주고 넘으면 빨갛게 알려 줘요.</div>'}</div>`}
+function budgetDlg(){const s=settings(),b=s.budgets||{};
+  openDlg('분류별 한 달 예산',`<div class="small">쓰고 싶은 분류만 적어요. 비우면 예산 없음. 카드·현금 지출 기록을 모두 더해서 비교해요.</div>${CATS.지출.map(c=>`<label class="f">${esc(c)}<input type="text" inputmode="numeric" data-bud="${esc(c)}" value="${b[c]?won(b[c]):''}" placeholder="예) 300,000"></label>`).join('')}`,'저장',()=>{
+    const o={};document.querySelectorAll('[data-bud]').forEach(el=>{const n=Number(el.value.replace(/[^0-9]/g,''));if(n>0)o[el.dataset.bud]=n});Store.put({...s,budgets:o});toast('예산을 저장했어요')});
+  document.querySelectorAll('[data-bud]').forEach(a=>a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''}))}
+// m월 돌아보기: 전달과 비교, 많이 쓴 대분류, 가장 많이 늘어난 분류, 예산 넘은 분류
+function reviewCard(m,title){const d=monthData(m),p=monthData(addMonth(m,-1));if(!d.spend)return '';
+  const by=catSpend(m),pb=catSpend(addMonth(m,-1));const G={};for(const[c,v]of Object.entries(by)){const g=catGroup(c);G[g]=(G[g]||0)+v}
+  const top=Object.entries(G).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const up=Object.keys(by).map(c=>[c,by[c]-(pb[c]||0)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])[0];
+  const over=budgetRows(m).filter(x=>x.s>x.b);const diff=p.spend?Math.round((d.spend-p.spend)/p.spend*100):null;
+  return `<div class="card" style="background:#f3f0ff"><h3>📋 ${title||mLabel(m)+' 돌아보기'}</h3>
+  <div class="small">쓴 돈 <b>${won(d.spend)}원</b>${diff!=null?` · ${Number(addMonth(m,-1).slice(5))}월보다 <b style="color:${diff>0?'var(--red)':'var(--good)'}">${diff>0?diff+'% 늘었어요':diff<0?(-diff)+'% 줄었어요':'똑같아요'}</b>`:''}${d.inc?` · 수입 ${won(d.inc)}원 중 ${Math.max(0,Math.round((d.inc-d.spend)/d.inc*100))}% 남김`:''}</div>
+  <div class="small" style="margin-top:4px">많이 쓴 곳: ${top.map(([g,v])=>`${g} ${man(v)}`).join(' · ')}</div>
+  ${up&&pb[up[0]]!==undefined?`<div class="small">가장 많이 늘어난 분류: <b>${esc(up[0])}</b> +${won(up[1])}원</div>`:''}
+  ${over.length?`<div class="small" style="color:var(--red)">예산 넘은 분류: ${over.map(x=>esc(x.c)+' '+man(x.s-x.b)+' 넘음').join(', ')}</div>`:''}</div>`}
 function vWish(){
   const ws=Store.all('wish').sort((a,b)=>b.t-a.t);const S={new:'접수',doing:'만드는 중',done:'반영됨'};
   return `<div class="view"><div class="cols"><div class="card"><h3>이런 기능 있었으면 💌</h3>
@@ -628,18 +655,36 @@ function parsePays(raw){
   if(parts.length>1)return parts;const one=parsePay(raw);return one?[one]:[]}
 function setChip(name,v){const box=document.querySelector(`[data-chips="${name}"]`);if(!box)return;const b=[...box.querySelectorAll('button')].find(x=>x.dataset.c===v);if(b)box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))}
 function dupEntry(p){return Object.values(Store.recs).some(r=>!r.del&&r.kind==='entry'&&r.type===p.type&&r.amount===p.amount&&r.date===p.date)}
-function smsBox(){return `<details class="sms" id="smsBox"><summary>📩 결제·입금 문자, 쿠팡 알림 붙여넣기</summary>
+function smsBox(){return `<details class="sms" id="smsBox"><summary>📩 문자·쿠팡 알림 붙여넣기 · 📷 영수증</summary>
   <div class="small">카드 결제·은행 입금 문자나 카톡 알림, 쿠팡 결제 알림을 길게 눌러 복사한 뒤 여기에 붙여넣으면 금액·가게·날짜가 채워져요. 여러 개를 한 번에 붙여도 돼요.</div>
   <textarea id="fSms" placeholder="여기에 붙여넣기" style="min-height:70px"></textarea>
-  <div class="toolbar"><button type="button" class="btn ghost" id="smsPaste">복사한 글자 붙여넣기</button></div><div class="small" id="smsMsg"></div></details>`}
+  <div class="toolbar"><button type="button" class="btn ghost" id="smsPaste">복사한 글자 붙여넣기</button><label class="btn ghost" style="cursor:pointer">📷 영수증 사진 (베타)<input type="file" id="rcpt" accept="image/*" capture="environment" hidden></label></div><div class="small" id="smsMsg"></div></details>`}
+// 영수증 글자 → {amount,date,memo}. 합계·결제금액 줄의 숫자를 우선, 없으면 가장 큰 금액
+function parseReceipt(raw){const s=String(raw||'').replace(/\r/g,'');const lines=s.split('\n').map(x=>x.trim()).filter(Boolean);const num=x=>Number(String(x).replace(/[^0-9]/g,''));
+  let amount=0;for(const l of lines){if(/합\s*계|총\s*액|결제\s*금액|받을\s*금액|청구\s*금액|승인\s*금액|카드\s*결제|총\s*결제/.test(l.replace(/\s+/g,' '))){const ns=(l.match(/[0-9]{1,3}(?:[,.][0-9]{3})+|[0-9]{4,}/g)||[]).map(num);if(ns.length)amount=Math.max(amount,...ns)}}
+  if(!amount){const ns=(s.match(/[0-9]{1,3}(?:,[0-9]{3})+/g)||[]).map(num).filter(n=>n<1e8);if(ns.length)amount=Math.max(...ns)}
+  if(!amount)return null;
+  let date=today(),m;
+  if((m=s.match(/(20\d\d)\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/))||(m=s.match(/\b(\d\d)[.\-\/](\d\d)[.\-\/](\d\d)\b/))){const y=m[1].length===2?2000+Number(m[1]):Number(m[1]);if(+m[2]>=1&&+m[2]<=12&&+m[3]>=1&&+m[3]<=31)date=y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0')}
+  const memo=(lines.find(l=>/[가-힣]{2,}/.test(l)&&!/영수증|사업자|전화|주소|대표|TEL|번호|일시|매출|고객|카드|POS|포스/i.test(l))||'').replace(/[^가-힣A-Za-z0-9()&.\s]/g,'').trim().slice(0,30);
+  return {amount,date,memo,card:'',type:'지출',cat:guessCat(memo+' '+s),cancel:false}}
+let tessP=null;
+function loadTess(){if(window.Tesseract)return Promise.resolve();if(tessP)return tessP;tessP=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';sc.onload=ok;sc.onerror=()=>{tessP=null;no(new Error('load'))};document.head.appendChild(sc)});return tessP}
 function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const msg=document.getElementById('smsMsg');
+  const fill=p=>{const T=p.type;setChip('type',T);document.getElementById('catBox').innerHTML=chips('cat',CATS[T],p.cat||CATS[T][0]);document.getElementById('payBox').hidden=T!=='지출';
+    document.getElementById('fAmt').value=won(p.amount);document.getElementById('fMemo').value=p.memo;document.getElementById('fDate').value=p.date};
+  const rc=document.getElementById('rcpt');if(rc)rc.onchange=async()=>{const f=rc.files&&rc.files[0];if(!f)return;
+    msg.textContent='영수증 읽는 중… (처음엔 글자 사전을 받느라 30초쯤 걸려요)';
+    try{await loadTess();const r=await Tesseract.recognize(f,'kor+eng');const p=parseReceipt(r.data.text);
+      if(!p){msg.textContent='합계 금액을 못 찾았어요. 직접 적어 주세요.';return}
+      fill(p);msg.innerHTML='영수증에서 채웠어요(베타). <b>금액·날짜가 맞는지 꼭 확인</b>하고 저장해 주세요.'+(dupEntry(p)?'<br>⚠ 같은 날 같은 금액 기록이 이미 있어요.':'')}
+    catch(e){msg.textContent='영수증을 못 읽었어요. 인터넷 연결을 확인하거나 직접 적어 주세요.'}};
   const run=()=>{const list=parsePays(ta.value);
     if(!list.length){msg.textContent=ta.value.trim()?'금액을 못 찾았어요. 직접 적어 주세요.':'';return}
     if(list.length>1){msg.innerHTML=`<b>${list.length}건</b>을 찾았어요.<br>${list.map(p=>`${p.date.slice(5)} ${p.type==='수입'?'💰':''}${esc(p.memo||'?')} ${won(p.amount)}원${p.cancel?' (취소)':''}${dupEntry(p)?' ⚠이미 있음':''}${selfIn(p)?' (내 계좌 이체·뺌)':''}`).join('<br>')}<div class="toolbar"><button type="button" class="btn" id="smsAll">취소·중복·내 이체 빼고 모두 저장</button></div>`;
       document.getElementById('smsAll').onclick=()=>{let n=0;for(const p of list){if(p.cancel||dupEntry(p)||selfIn(p))continue;Store.put({id:uid(),kind:'entry',type:p.type,who:chipVal('who')||me(),amount:p.amount,cat:p.cat||CATS[p.type][CATS[p.type].length-1],memo:p.memo,date:p.date,pay:p.type==='지출'?'카드':''});n++}
         dlg.close();toast(n+'건 저장했어요')};return}
-    const p=list[0];const T=p.type;setChip('type',T);document.getElementById('catBox').innerHTML=chips('cat',CATS[T],p.cat||CATS[T][0]);document.getElementById('payBox').hidden=T!=='지출';if(T==='지출')setChip('pay','카드');
-    document.getElementById('fAmt').value=won(p.amount);document.getElementById('fMemo').value=p.memo;document.getElementById('fDate').value=p.date;
+    const p=list[0];fill(p);if(p.type==='지출')setChip('pay','카드');
     msg.innerHTML=(p.cancel?'⚠ <b>취소</b> 문자예요. 예전 기록을 찾아 지우는 게 맞아요. ':'채웠어요. 확인하고 저장을 눌러 주세요. ')+(dupEntry(p)?'<br>⚠ 같은 날 같은 금액 기록이 이미 있어요.':'')+(selfIn(p)?'<br>⚠ 내 계좌끼리 옮긴 돈 같아요. 수입이 아니면 저장하지 마세요.':'')+(p.cat?'':'<br>분류는 직접 골라 주세요.')};
   ta.addEventListener('input',run);
   document.getElementById('smsPaste').onclick=async()=>{try{ta.value=await navigator.clipboard.readText();run()}catch(e){msg.textContent='위 칸을 길게 눌러 붙여넣기 해 주세요.';ta.focus()}}}
@@ -754,6 +799,7 @@ document.addEventListener('click',e=>{
   else if(ds.goal)goalDlg();
   else if(ds.fixed)fixedDlg(ds.fixed==='new'?null:Store.get(ds.fixed));
   else if(ds.paid)togglePaid(ds.paid);
+  else if(ds.budget)budgetDlg();
   else if(ds.loan)loanDlg(ds.loan==='new'?null:Store.get(ds.loan));
   else if(ds.lpaid)toggleLoanPaid(ds.lpaid);
   else if(ds.taxcfg)taxDlg(ds.taxcfg);
