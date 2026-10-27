@@ -119,7 +119,10 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.tb{margin:4px 0}button.mini{padding:0 5px;font-size:10px;line-height:15px;box-shadow:2px 2px 0 var(--line);margin-left:3px;vertical-align:middle}
+.tb{margin:4px 0}.catgrid .crw{display:flex;gap:6px;align-items:flex-start;padding:3px 0;border-bottom:1px dashed #e3d3b8}.catgrid .crw:last-child{border-bottom:0}.catgrid .cg{font-size:11px;color:#7a6a55;flex:0 0 96px;white-space:nowrap;padding-top:4px}.catgrid .chips{flex:1;gap:4px 5px}
+@media(max-width:520px){.catgrid .cg{flex-basis:78px;font-size:10px;white-space:normal}}
+.csec{margin:8px 0}.csec b{display:block;margin-bottom:4px}.crow{display:flex;gap:6px;margin-bottom:4px}.crow .cgn{flex:0 0 120px;width:120px}.crow .cgl{flex:1;min-width:0}
+button.mini{padding:0 5px;font-size:10px;line-height:15px;box-shadow:2px 2px 0 var(--line);margin-left:3px;vertical-align:middle}
 hr.half{border:0;border-top:2px dashed #c9b28d;margin:8px 0 6px}.tb .row{font-size:12px}
 .vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th,.uptbl td{padding:3px 4px}.uptbl td{vertical-align:middle}.upwrap{max-height:150px;overflow:auto}.uptbl .ucd{width:86px;white-space:nowrap}.dday{white-space:nowrap}.uptbl .ucw{width:44px}.uptbl .ucb{width:22px;text-align:center}.uptbl td+td,.sumtbl td+td,.sumtbl th+th{border-left:1px dashed #c9b28d}.uptbl{border:1px dashed #c9b28d}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
@@ -199,7 +202,6 @@ html.widget .fab{display:none}
     <button class="tab" role="tab" data-v="save">모은 돈</button>
     <button class="tab" role="tab" data-v="report">리포트</button>
     <button class="tab" role="tab" data-v="tax">세금</button>
-    <button class="tab" role="tab" data-v="wish">건의함</button>
     <div class="right"><span class="live" id="live"><i></i><span id="liveTxt">이 컴퓨터에만 저장 중</span></span></div>
   </div>
   <div id="main"></div>
@@ -211,19 +213,27 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.9.5';
-const CATS={
-  지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
-  수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
-  저축:['적금','예금','투자','비상금','기타']};
-// 분류는 프로그램 안 설정에서 바꿀 수 있어요(기록 'cats'). 비어 있으면 기본값
+const VERSION='0.9.6';
+// 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
+const TREE0={
+  지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
+    ['🛍 쇼핑·꾸미기',['쇼핑','옷·미용']],['🏥 건강',['의료','운동']],['🎈 여가·관계',['여행·여가','취미','경조사','선물']],['🧾 세금·보험·금융',['세금·보험','이자·수수료']],['📦 기타',['기타']]],
+  수입:[['💼 월급',['월급','상여·성과급']],['🧑‍💻 부수입',['3.3% 뗀 수입','안 뗀 부업수입']],['🎁 기타',['용돈·선물','이자·배당','환급','기타']]],
+  저축:[['🏦 저축',['적금','예금','비상금']],['📈 투자',['투자','연금']],['📦 기타',['기타']]]};
+const TREE=JSON.parse(JSON.stringify(TREE0));
+const flatT=tr=>[...new Set(tr.flatMap(([,l])=>l))];
+const CATS={지출:flatT(TREE0.지출),수입:flatT(TREE0.수입),저축:flatT(TREE0.저축)};
+// 분류는 설정 → 분류 바꾸기에서 바꿀 수 있어요(기록 'cats'.tree). 비어 있으면 기본값
 const CATS0=JSON.parse(JSON.stringify(CATS));
 const BIZ_CATS0=['3.3% 뗀 수입','안 뗀 부업수입'];
-// 리포트용 대분류. 직접 만든 분류는 '기타'로 묶여요
-const CAT_GROUPS=[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 생활',['주거·관리비','통신','구독','세금·보험']],['🚗 교통',['교통·차']],['🛍 쇼핑·건강',['쇼핑','의료']],['🎈 여가·관계',['여행·여가','경조사']]];
-const catGroup=c=>(CAT_GROUPS.find(([,l])=>l.includes(c))||['📦 기타'])[0];
-function applyCats(){{const c0=Store.get('cats');if(c0&&!c0.v069&&Array.isArray(c0.지출)){const l=c0.지출.slice();if(!l.includes('배달'))l.splice(Math.max(0,l.indexOf('외식·데이트')+1)||l.length,0,'배달');Store.recs.cats={...c0,지출:l,v069:true};Store.save();Sync.push([Store.recs.cats])}}
-  const c=Store.get('cats');for(const t of Object.keys(CATS0)){const v=c&&Array.isArray(c[t])?c[t].filter(Boolean):null;CATS[t]=v&&v.length?v:CATS0[t].slice()}}
+const catGroup=(c,t='지출')=>(TREE[t].find(([,l])=>l.includes(c))||['📦 기타'])[0];
+function applyCats(){const c=Store.get('cats');
+  for(const t of Object.keys(TREE0)){let tr=c&&c.tree&&Array.isArray(c.tree[t])?c.tree[t].filter(([g,l])=>g&&l&&l.length):null;
+    if(!tr&&c&&Array.isArray(c[t])&&c[t].length){ // 예전(한 줄짜리) 분류 → 기본 대분류에 넣고, 직접 만든 건 마지막 대분류에
+      tr=JSON.parse(JSON.stringify(TREE0[t]));const known=new Set(flatT(tr));const extra=c[t].filter(x=>x&&!known.has(x));if(extra.length)tr[tr.length-1][1].push(...extra)}
+    TREE[t]=tr&&tr.length?tr:JSON.parse(JSON.stringify(TREE0[t]));CATS[t]=flatT(TREE[t])}}
+// 분류 버튼: 대분류마다 한 줄 (이름 + 소분류 버튼)
+function catChips(t,sel){return `<div class="catgrid" data-chips="cat">${TREE[t].map(([g,l])=>`<div class="crw"><span class="cg">${esc(g)}</span><span class="chips">${l.map(c=>`<button type="button" aria-pressed="${c===sel}" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</span></div>`).join('')}</div>`}
 const WHO=['주니','영이','같이'];
 const whoCls=w=>w==='주니'?'j':w==='영이'?'y':'t';
 const won=n=>(Math.round(n)||0).toLocaleString('ko-KR');
@@ -380,7 +390,7 @@ function vSpend(){
 // 수입 탭: 월급 / 부수입(사업·프리랜서) / 기타 로 묶어서 봐요
 // 우리 원칙: 월급으로만 살림을 해결해요. 월급 − 총 지출(대출 포함) = 남긴 돈. 매달 목표(기본 100만원)만큼 남기면 잘한 달, 부수입은 덤.
 // 월급 = 분류 '월급' + 세금 탭에 주급(고정 프리랜서)을 정해 둔 사람의 '3.3% 뗀 수입'
-const isSalary=e=>e.cat==='월급'||(e.cat==='3.3% 뗀 수입'&&!!(taxCfg()[e.who]||{}).weekly);
+const isSalary=e=>(TREE.수입[0]||['',['월급']])[1].includes(e.cat)||(e.cat==='3.3% 뗀 수입'&&!!(taxCfg()[e.who]||{}).weekly);
 const INC_GROUPS=[['💼 월급',isSalary,'월급'],['🧑‍💻 부수입',e=>BIZ_CATS0.includes(e.cat),'안 뗀 부업수입'],['🎁 기타',()=>true,'기타']];
 const incGroup=e=>INC_GROUPS.find(([,f])=>f(e));
 const salaryOf=m=>monthData(m).es.filter(e=>e.type==='수입'&&isSalary(e)).reduce((a,e)=>a+Number(e.amount||0),0);
@@ -441,6 +451,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.9.6','10/27','분류를 대분류 → 소분류로 (적기 창·분류 바꾸기 창 모두 대분류마다 한 줄), 소분류 몇 개 추가. 건의함 탭은 설정 안으로'],
   ['0.9.5','10/27','성적을 ⭕❌ 대신 "이번 달 남긴 돈"으로: 월급 − 총 지출(대출 포함), 목표 100만원(정하기로 변경)'],
   ['0.9.4','10/27','월급으로만 성적 매기기: 월급 − 총 지출 ≥ 0이면 성공한 달, 부수입은 덤으로 따로'],
   ['0.9.3','10/27','수입 탭 추가(대출금 옆): 월급·부수입·기타로 나눠 보기, 주니·영이 따로, 남는 돈'],
@@ -542,7 +553,7 @@ function fixedDlg(rec){const r=rec||{name:'',who:takeWho('같이'),amount:0,day:
   openDlg(rec?'고정지출 고치기':'고정지출 추가',`<label class="f">항목 이름<input type="text" id="fName" value="${esc(r.name)}" placeholder="예) 관리비, 넷플릭스, 실손보험"></label>
   <label class="f">누구${chips('who',WHO,r.who)}</label><label class="f">금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${r.amount?won(r.amount):''}"></label>
   <label class="f">매달 나가는 날 (일)<input type="number" min="1" max="31" id="fDay" value="${r.day}"></label>
-  <label class="f">분류${chips('cat',CATS.지출,r.cat)}</label><label class="f">나가는 방법${chips('pay',FIX_PAY,fixPay(r.pay))}</label><div class="small">카드로 나가는 건 카드값 청구서에 들어 있어서 총 지출에서 두 번 세지 않아요.</div>`,'저장',()=>{
+  <label class="f">분류${catChips('지출',r.cat)}</label><label class="f">나가는 방법${chips('pay',FIX_PAY,fixPay(r.pay))}</label><div class="small">카드로 나가는 건 카드값 청구서에 들어 있어서 총 지출에서 두 번 세지 않아요.</div>`,'저장',()=>{
     if(!val('fName'))return '항목 이름을 적어 주세요.';const amt=numVal('fAmt');if(!amt)return '금액을 적어 주세요.';const day=numVal('fDay');if(!(day>=1&&day<=31))return '날짜는 1~31 사이로 적어 주세요.';
     Store.put({...(rec||{}),id:rec?.id||uid(),kind:'fixed',name:val('fName'),who:chipVal('who'),amount:amt,day,cat:chipVal('cat'),pay:chipVal('pay'),active:true});toast('저장했어요')});
   const a=document.getElementById('fAmt');a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''});}
@@ -685,8 +696,8 @@ const numVal=id=>Number(val(id).replace(/[^0-9.-]/g,''));
 function chips(name,list,sel){return `<div class="chips" data-chips="${name}">${list.map(c=>`<button type="button" aria-pressed="${c===sel}" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`}
 const chipVal=name=>document.querySelector(`[data-chips="${name}"] [aria-pressed="true"]`)?.dataset.c;
 dlg.addEventListener('close',()=>{preWho=null;preCat=null});
-dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button');if(!b)return;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  if(b.parentElement.dataset.chips==='type'){const t=b.dataset.c;document.getElementById('catBox').innerHTML=chips('cat',CATS[t],CATS[t][0]);document.getElementById('payBox').hidden=t!=='지출'}});
+dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button');if(!b)return;const box=b.closest('[data-chips]');box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if(box.dataset.chips==='type'){const t=b.dataset.c;document.getElementById('catBox').innerHTML=catChips(t,CATS[t][0]);document.getElementById('payBox').hidden=t!=='지출'}});
 // 카드 결제 문자·카톡 알림·쿠팡 알림 글자 → {amount,date,memo,cat,cancel}
 const CAT_HINTS=[
   ['배달',/쿠팡이츠|배달의민족|배민|요기요|땡겨요/i],
@@ -755,7 +766,7 @@ function parseReceipt(raw){const s=String(raw||'').replace(/\r/g,'');const lines
 let tessP=null;
 function loadTess(){if(window.Tesseract)return Promise.resolve();if(tessP)return tessP;tessP=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';sc.onload=ok;sc.onerror=()=>{tessP=null;no(new Error('load'))};document.head.appendChild(sc)});return tessP}
 function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const msg=document.getElementById('smsMsg');
-  const fill=p=>{const T=p.type;setChip('type',T);document.getElementById('catBox').innerHTML=chips('cat',CATS[T],p.cat||CATS[T][0]);document.getElementById('payBox').hidden=T!=='지출';
+  const fill=p=>{const T=p.type;setChip('type',T);document.getElementById('catBox').innerHTML=catChips(T,p.cat||CATS[T][0]);document.getElementById('payBox').hidden=T!=='지출';
     document.getElementById('fAmt').value=won(p.amount);document.getElementById('fMemo').value=p.memo;document.getElementById('fDate').value=p.date};
   const rc=document.getElementById('rcpt');if(rc)rc.onchange=async()=>{const f=rc.files&&rc.files[0];if(!f)return;
     msg.textContent='영수증 읽는 중… (처음엔 글자 사전을 받느라 30초쯤 걸려요)';
@@ -783,7 +794,7 @@ function entryDlg(type,rec,pay){
   <label class="f">종류${chips('type',['지출','수입','저축'],r.type)}</label>
   <label class="f">누가${chips('who',WHO,r.who)}</label>
   <label class="f">금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${r.amount?won(r.amount):''}" placeholder="예) 12,000" autocomplete="off"></label>
-  <label class="f">분류<span id="catBox">${chips('cat',CATS[r.type],r.cat)}</span></label>
+  <label class="f">분류<span id="catBox">${catChips(r.type,r.cat)}</span></label>
   <label class="f">내용 (선택)<input type="text" id="fMemo" value="${esc(r.memo||'')}" placeholder="예) 마트 장보기"></label>
   <label class="f">날짜<input type="date" id="fDate" value="${r.date}"></label>
   <label class="f" id="payBox" ${r.type!=='지출'?'hidden':''}>결제${chips('pay',['카드','현금·이체'],r.pay||'카드')}</label>`,'저장',()=>{
@@ -812,16 +823,19 @@ function accDlg(rec){const r=rec||{who:'같이',name:'',type:'적금',balance:0}
 function goalDlg(){const s=settings();openDlg('목표 바꾸기',`<label class="f">목표 이름<input type="text" id="fName" value="${esc(s.goalName||'')}"></label><label class="f">목표 금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${won(s.goal)}"></label>`,'저장',()=>{const g=numVal('fAmt');if(!g)return '목표 금액을 적어 주세요.';Store.put({...s,goal:g,goalName:val('fName')});toast('목표를 바꿨어요')})}
 function meDlg(){openDlg('지금 쓰는 사람',`<div class="small">이 컴퓨터에서 쓰는 사람을 골라 주세요. 기록할 때 '누가'가 자동으로 정해져요.</div>${chips('me',['주니','영이'],me())}`,'확인',()=>{ls.set('jy.me',chipVal('me'));render()})}
 function catsDlg(){applyCats();
-  openDlg('분류 바꾸기',`<div class="small">쉼표(,)로 나눠 적어요. 순서대로 버튼이 나와요. 이미 적은 기록의 분류는 그대로 남아요.</div>
-  ${Object.keys(CATS0).map(t=>`<label class="f">${t}<textarea data-cat="${t}" style="min-height:64px">${esc(CATS[t].join(', '))}</textarea></label>`).join('')}
-  <div class="small">수입의 '3.3% 뗀 수입', '안 뗀 부업수입'은 세금 계산에 쓰여서 지워도 자동으로 다시 들어가요.</div>
+  const row=(g,l)=>`<div class="crow"><input type="text" class="cgn" value="${esc(g)}" placeholder="대분류"><input type="text" class="cgl" value="${esc(l.join(', '))}" placeholder="소분류를 쉼표로"></div>`;
+  const sec=(t,tr)=>`<div class="csec" data-t="${t}"><b>${t}</b>${tr.map(([g,l])=>row(g,l)).join('')}<button type="button" class="btn ghost mini" data-crow="${t}">＋ 대분류</button></div>`;
+  openDlg('분류 바꾸기',`<div class="small">왼쪽은 대분류, 오른쪽은 소분류(쉼표로 나눠 적기)예요. 이미 적은 기록은 그대로예요. 대분류 이름을 지우면 그 줄이 빠져요.</div>
+  <div id="cBox">${Object.keys(TREE0).map(t=>sec(t,TREE[t])).join('')}</div>
+  <div class="small">수입의 맨 위 대분류가 '월급'이에요(남긴 돈 계산). '3.3% 뗀 수입', '안 뗀 부업수입'은 세금 계산에 쓰여서 지워도 다시 들어가요.</div>
   <div class="toolbar"><button type="button" class="btn ghost" id="catReset">처음 분류로 되돌리기</button></div>`,'저장',()=>{
-    const o={id:'cats',kind:'cats'};
-    document.querySelectorAll('[data-cat]').forEach(el=>{const t=el.dataset.cat;const v=[...new Set(el.value.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean))].slice(0,30);o[t]=v});
-    for(const k of BIZ_CATS)if(!o.수입.includes(k))o.수입.push(k);
-    if(Object.keys(CATS0).some(t=>!o[t].length))return '분류가 하나도 없는 칸이 있어요.';
-    Store.put(o);toast('분류를 바꿨어요')});
-  document.getElementById('catReset').onclick=()=>document.querySelectorAll('[data-cat]').forEach(el=>el.value=CATS0[el.dataset.cat].join(', '))}
+    const tree={};for(const sc of document.querySelectorAll('.csec')){const t=sc.dataset.t;tree[t]=[...sc.querySelectorAll('.crow')].map(r=>[r.querySelector('.cgn').value.trim(),[...new Set(r.querySelector('.cgl').value.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean))].slice(0,20)]).filter(([g,l])=>g&&l.length)}
+    for(const k of BIZ_CATS)if(!flatT(tree.수입).includes(k)){const g=tree.수입.find(([n])=>/부수입/.test(n))||tree.수입[tree.수입.length-1];if(g)g[1].push(k);else tree.수입.push(['🧑‍💻 부수입',[k]])}
+    if(Object.keys(TREE0).some(t=>!tree[t].length))return '분류가 하나도 없는 칸이 있어요.';
+    Store.put({id:'cats',kind:'cats',tree});toast('분류를 바꿨어요')});
+  const box=document.getElementById('cBox');
+  box.onclick=e=>{const b=e.target.closest('[data-crow]');if(b)b.insertAdjacentHTML('beforebegin',row('',[]))};
+  document.getElementById('catReset').onclick=()=>{box.innerHTML=Object.keys(TREE0).map(t=>sec(t,TREE0[t])).join('')}}
 // 지운 기록은 del:true로 남아 있어서 되살릴 수 있어요
 const TRASH_KINDS={entry:'기록',bill:'카드값',fixed:'고정지출',loan:'대출',account:'통장',wish:'건의'};
 function trashLabel(r){const w=r.who?`<span class="who ${whoCls(r.who)}">${esc(r.who)}</span>`:'';
@@ -845,6 +859,7 @@ function setDlg(){const c=Sync.cfg()||{url:'',key:''};
   <div class="toolbar"><button type="button" class="btn ghost" id="bkOut">백업 글자 복사</button><button type="button" class="btn ghost" id="bkIn">백업 붙여넣기</button></div>
   <label class="f">수입에서 뺄 보낸 사람 이름 · 내 계좌끼리 옮긴 돈은 수입으로 안 적어요 (쉼표로 나눠 적기, 예: 홍길동, 김영희)<input type="text" id="fSelf" value="${esc(settings().selfNames||'')}"></label>
   <div class="small"><b>휴지통</b> · 지운 기록을 다시 살릴 수 있어요</div><div class="toolbar"><button type="button" class="btn ghost" id="trashBtn">🗑 휴지통 열기</button></div>
+  <div class="small"><b>건의함</b> · 바랐던 기능 적기, 업데이트 기록 보기</div><div class="toolbar"><button type="button" class="btn ghost" id="wishBtn">💌 건의함 열기</button></div>
   <div class="small"><b>분류</b> · 식비, 카페 같은 분류 이름을 바꾸거나 더할 수 있어요</div><div class="toolbar"><button type="button" class="btn ghost" id="catEdit">분류 바꾸기</button></div>
   <div class="small"><b>폰·다른 컴퓨터 연결</b> · QR을 폰 카메라로 찍거나 링크를 카톡으로 보내면 설정 없이 바로 연결돼요</div><div class="toolbar"><button type="button" class="btn ghost" id="qrBtn">연결 QR·링크 만들기</button></div><div id="qrBox"></div>
   <textarea id="bkTxt" placeholder="백업 글자가 여기에 나와요" hidden></textarea>`,'저장',()=>{
@@ -854,6 +869,7 @@ function setDlg(){const c=Sync.cfg()||{url:'',key:''};
     if(url){ls.set('jy.sheet',{url,key});ls.set('jy.since',0);Sync.since=0;Sync.queue=Object.values(Store.recs);ls.set('jy.queue',Sync.queue)}else{ls.set('jy.sheet',null)}
     Sync.start();toast(url?'연결했어요. 기록을 맞추는 중이에요':'이 컴퓨터에만 저장해요')});
   document.getElementById('trashBtn').onclick=()=>trashDlg();
+  document.getElementById('wishBtn').onclick=()=>{dlg.close();view='wish';ls.set('jy.view',view);render();scrollTo(0,0)};
   document.getElementById('bkOut').onclick=async()=>{const t=document.getElementById('bkTxt');t.hidden=false;t.value=JSON.stringify(Object.values(Store.recs));t.select();try{await navigator.clipboard.writeText(t.value);toast('복사했어요')}catch(e){toast('글자를 직접 복사해 주세요')}};
   document.getElementById('qrBtn').onclick=()=>{const c=Sync.cfg();const box=document.getElementById('qrBox');
     if(!c||!c.url){box.innerHTML='<div class="small">먼저 위에 연결 주소와 비밀번호를 넣고 저장해 주세요.</div>';return}
