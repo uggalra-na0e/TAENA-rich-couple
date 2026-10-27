@@ -68,7 +68,7 @@ button,input,select,textarea{font:inherit;color:var(--ink)}
 .hp.r span{background:repeating-linear-gradient(90deg,var(--warn) 0 10px,#c95f3b 10px 12px)}
 .small{font-size:11px;color:var(--ink-soft)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.dday{background:var(--red);color:var(--paper);font-weight:700;padding:0 6px;border:2px solid var(--line);font-size:11px}
+.dday{display:inline-block;min-width:5.6em;text-align:center;box-sizing:border-box;background:var(--red);color:var(--paper);font-weight:700;padding:0 6px;border:2px solid var(--line);font-size:11px}
 .dcell{white-space:nowrap}.dnum{display:inline-block;min-width:3.2em;text-align:right;margin-right:6px;font-variant-numeric:tabular-nums}.dcell .dday,.dcell .st-badge{display:inline-block;min-width:5.6em;text-align:center;box-sizing:border-box}
 .lvl{display:flex;align-items:center;gap:10px}
 .lvl .badge{border:3px solid var(--line);background:#4fae6a;color:var(--paper);font-weight:700;padding:4px 8px;font-size:15px;white-space:nowrap}
@@ -182,7 +182,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.6';
+const VERSION='0.6.1';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -411,22 +411,30 @@ const TAX_BRACKETS=[[14e6,.06,0],[50e6,.15,1.26e6],[88e6,.24,5.76e6],[150e6,.35,
 const incomeTax=base=>{if(base<=0)return 0;for(const[lim,r,d]of TAX_BRACKETS)if(base<=lim)return base*r-d};
 const wageDed=s=>Math.min(2e7,s<=5e6?s*.7:s<=15e6?3.5e6+(s-5e6)*.4:s<=45e6?7.5e6+(s-15e6)*.15:s<=1e8?12e6+(s-45e6)*.05:14.75e6+(s-1e8)*.02);
 const BIZ_CATS=['3.3% 뗀 수입','안 뗀 부업수입'];
-const taxCfg=()=>{const c=Store.get('taxcfg')||{id:'taxcfg',kind:'taxcfg',주니:{type:'both',exp:60,ded:0},영이:{type:'emp',exp:60,ded:0}};
+const taxCfg=()=>{const c=Store.get('taxcfg')||{id:'taxcfg',kind:'taxcfg',주니:{type:'both',exp:60,ded:0},영이:{type:'free',exp:60,ded:0,weekly:1250000,wkNet:false,payDay:20},wk06:true};
+  if(!c.wk06){c.영이={...(c.영이||{}),type:'free',weekly:1250000,wkNet:false,payDay:20};c.wk06=true} // 2026-10 영이 주급 프리랜서(3.3%)로 바뀜
   if(!c.biz)c.biz={name:'부업 사업자',owner:'주니',vat:'간이',open:'2026-10-06',rate:30};return c};
-function taxCalc(w,year){const c=taxCfg()[w]||{type:'free',exp:60,ded:0};
+// 주급 프리랜서: 매주 토요일 기준으로 쌓이고, 매달 payDay일에 지난달 토요일 수만큼 들어온다고 봐요
+function satCount(y,m){let n=0;const d=new Date(y,m,1);while(d.getMonth()===m){if(d.getDay()===6)n++;d.setDate(d.getDate()+1)}return n}
+function weeklyPlan(c,year){const y=Number(year),wk=Number(c.weekly)||0;if(!wk)return null;const gw=c.wkNet?wk/0.967:wk;const t=new Date();const start=c.wkStart||'';
+  const pays=[];for(let m=0;m<12;m++){const wy=m?y:y-1,wm=m?m-1:11;const workYm=wy+'-'+String(wm+1).padStart(2,'0');if(start&&workYm<start)continue;
+    const n=satCount(wy,wm);const date=new Date(y,m,Number(c.payDay)||20);pays.push({date,n,gross:gw*n,done:date<=t})}
+  const gross=pays.reduce((a,p)=>a+p.gross,0),ytd=pays.filter(p=>p.done).reduce((a,p)=>a+p.gross,0);
+  return{gw,pays,gross,ytd,weeks:pays.reduce((a,p)=>a+p.n,0)}}
+function taxCalc(w,year){const c=taxCfg()[w]||{type:'free',exp:60,ded:0};const wp=c.weekly&&!c.gross?weeklyPlan(c,year):null;
   const es=Store.all('entry').filter(e=>e.type==='수입'&&e.who===w&&e.date.startsWith(year));
   const net33=es.filter(e=>e.cat==='3.3% 뗀 수입').reduce((a,e)=>a+Number(e.amount),0),other=es.filter(e=>e.cat==='안 뗀 부업수입').reduce((a,e)=>a+Number(e.amount),0);
   const t=new Date();const elapsed=String(t.getFullYear())===year?Math.max(1,t.getMonth()+1):12;const k=12/elapsed;
   const g33=net33/0.967;const ytdGross=g33+other;
-  const gross=c.gross?Number(c.gross):ytdGross*k;const prepaid=c.gross?(c.prepaid!=null&&c.prepaid!==''?Number(c.prepaid):gross*(ytdGross?g33/ytdGross:1)*0.033):g33*0.033*k;
+  const gross=c.gross?Number(c.gross):wp?wp.gross+other*k:ytdGross*k;const prepaid=wp?(c.prepaid!=null&&c.prepaid!==''?Number(c.prepaid):wp.gross*0.033):c.gross?(c.prepaid!=null&&c.prepaid!==''?Number(c.prepaid):gross*(ytdGross?g33/ytdGross:1)*0.033):g33*0.033*k;
   const incomeAmt=gross*(1-(Number(c.exp)||0)/100);const ded=Number(c.ded)||0;
   if(c.type==='both'){ // 월급은 연말정산으로 끝났다고 보고, 부업소득이 얹히면서 늘어나는 세금만 계산
     const sal=Number(c.sal)||0;const salBase=Math.max(0,sal-wageDed(sal)-1.5e6-ded);
     const calcSal=incomeTax(salBase),calcAll=incomeTax(salBase+incomeAmt);const decided=Math.max(0,calcAll-calcSal);const total=decided*1.1;const due=total-prepaid;
-    return{c,ytdGross,gross,prepaid,incomeAmt,sal,salBase,calcSal,calcAll,base:salBase+incomeAmt,decided,total,due,k,elapsed}}
+    return{c,wp,ytdGross,gross,prepaid,incomeAmt,sal,salBase,calcSal,calcAll,base:salBase+incomeAmt,decided,total,due,k,elapsed}}
   const base=Math.max(0,incomeAmt-1.5e6-ded);
   const calc=incomeTax(base);const decided=Math.max(0,calc-70000);const total=decided*1.1;const due=total-prepaid;
-  return{c,ytdGross,gross,prepaid,incomeAmt,base,calc,decided,total,due,k,elapsed}}
+  return{c,wp,ytdGross,gross,prepaid,incomeAmt,base,calc,decided,total,due,k,elapsed}}
 function vatCalc(year){const b=taxCfg().biz;if(!b||!b.open||Number(year)<Number(b.open.slice(0,4)))return null;
   const from=String(year)===b.open.slice(0,4)?b.open:year+'-01-01';
   const es=Store.all('entry').filter(e=>e.type==='수입'&&e.who===b.owner&&BIZ_CATS.includes(e.cat)&&e.date.startsWith(year)&&e.date>=from);
@@ -444,7 +452,7 @@ function vTax(){const year=cur.slice(0,4);const ny=Number(year)+1;
     <div class="big" style="color:${x.due>0?'var(--red)':'var(--good)'}">${x.due>0?'낼 돈 ':'돌려받을 돈 '}${won(Math.abs(x.due))}<span class="won">원</span></div>
     <div class="tblwrap" style="margin-top:6px"><table>
     <tr><td>올해 부업수입 (세전)</td><td class="m">${won(x.gross)}</td></tr>
-    <tr><td class="small" colspan="2">${x.c.gross?'직접 넣은 예상 금액':`지금까지 기록 ${won(x.ytdGross)}원 × 12/${x.elapsed}개월로 연말까지 늘려 잡았어요`}</td></tr>
+    <tr><td class="small" colspan="2">${x.c.gross?'직접 넣은 예상 금액':x.wp?`주 ${won(x.c.weekly)}원${x.c.wkNet?'(실수령→세전 환산)':''} × 토요일 ${x.wp.weeks}주 · 매달 ${Number(x.c.payDay)||20}일에 지난달 토요일 수만큼 받는 걸로 계산 (지금까지 ${won(x.wp.ytd)}원)`:`지금까지 기록 ${won(x.ytdGross)}원 × 12/${x.elapsed}개월로 연말까지 늘려 잡았어요`}</td></tr>
     <tr><td>− 경비 (${Number(c.exp)||0}%)</td><td class="m">${won(x.gross-x.incomeAmt)}</td></tr>
     <tr><td>= 부업 소득</td><td class="m">${won(x.incomeAmt)}</td></tr>
     ${both?`<tr><td>월급 쪽 과세표준 (연봉 ${man(x.sal)}원 기준 추정)</td><td class="m">${won(x.salBase)}</td></tr>
@@ -484,11 +492,16 @@ function taxDlg(w){const cf=taxCfg();
   <label class="f">연봉 세전 (원) · 직장인 + 부업일 때만 써요<input type="text" inputmode="numeric" id="fSal" value="${c.sal?won(c.sal):''}"></label>
   <label class="f">경비율 (%) · 홈택스에서 업종 단순경비율 확인<input type="number" id="fExp" min="0" max="100" step="0.1" value="${c.exp??60}"></label>
   <label class="f">추가 공제 (원, 선택) · 국민연금·노란우산 등<input type="text" inputmode="numeric" id="fDed" value="${c.ded?won(c.ded):''}"></label>
+  <div class="small" style="margin-top:4px"><b>주급 고정 수입 (프리랜서 3.3%)</b> · 넣으면 기록 대신 이걸로 1년치를 계산해요</div>
+  <label class="f">주급 (원, 선택)<input type="text" inputmode="numeric" id="fWk" value="${c.weekly?won(c.weekly):''}" placeholder="예) 1,250,000"></label>
+  <label class="f">주급 금액은${chips('wknet',['3.3% 떼기 전','떼고 받는 돈'],c.wkNet?'떼고 받는 돈':'3.3% 떼기 전')}</label>
+  <label class="f">들어오는 날 (매달 며칠)<input type="number" id="fPd" min="1" max="31" value="${c.payDay||20}"></label>
+  <label class="f">일 시작한 달 (선택) · 비우면 1월부터<input type="month" id="fWs" value="${esc(c.wkStart||'')}"></label>
   <label class="f">올해 예상 부업수입 세전 (원, 선택) · 비우면 기록으로 계산<input type="text" inputmode="numeric" id="fGross" value="${c.gross?won(c.gross):''}"></label>
   <label class="f">올해 이미 떼인 3.3% (원, 선택)<input type="text" inputmode="numeric" id="fPre" value="${c.prepaid?won(c.prepaid):''}"></label>`,'저장',()=>{
     const tv=chipVal('ttype');const type=Object.keys(T).find(k=>T[k]===tv);const g=numVal('fGross'),p=numVal('fPre');
-    Store.put({...cf,[w]:{type,sal:numVal('fSal')||0,exp:Number(val('fExp'))||0,ded:numVal('fDed')||0,gross:g||'',prepaid:val('fPre')?p:''}});toast('저장했어요')});
-  ['fSal','fDed','fGross','fPre'].forEach(id=>{const a=document.getElementById(id);a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''})})}
+    Store.put({...cf,[w]:{type,sal:numVal('fSal')||0,exp:Number(val('fExp'))||0,ded:numVal('fDed')||0,gross:g||'',prepaid:val('fPre')?p:'',weekly:numVal('fWk')||0,wkNet:chipVal('wknet')==='떼고 받는 돈',payDay:Number(val('fPd'))||20,wkStart:val('fWs')}});toast('저장했어요')});
+  ['fSal','fDed','fGross','fPre','fWk'].forEach(id=>{const a=document.getElementById(id);a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''})})}
 
 /* ---------- 입력 창 ---------- */
 const dlg=document.getElementById('dlg');let onOk=null;
