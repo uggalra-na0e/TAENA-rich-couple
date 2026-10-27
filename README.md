@@ -6,3 +6,4 @@
 - `#widget` : 작은 위젯 화면
 - `apps-script.gs` : 구글 시트 Apps Script 연결 코드
 - `src/` : 소스. `cd src && python3 build2.py && mv app.html ../index.html`
+- `qrcode.js` : QR 생성 (qrcode-generator 1.4.4, Kazuhiko Arase, MIT)
