@@ -114,6 +114,7 @@ dialog::backdrop{background:rgba(58,42,46,.35)}
 label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:700}
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
+tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -182,14 +183,18 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.6.9';
+const VERSION='0.7';
 const CATS={
-  지출:['식비','장보기','카페·간식','외식·데이트','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
+  지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
   저축:['적금','예금','투자','비상금','기타']};
 // 분류는 프로그램 안 설정에서 바꿀 수 있어요(기록 'cats'). 비어 있으면 기본값
 const CATS0=JSON.parse(JSON.stringify(CATS));
-function applyCats(){const c=Store.get('cats');for(const t of Object.keys(CATS0)){const v=c&&Array.isArray(c[t])?c[t].filter(Boolean):null;CATS[t]=v&&v.length?v:CATS0[t].slice()}}
+// 리포트용 대분류. 직접 만든 분류는 '기타'로 묶여요
+const CAT_GROUPS=[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 생활',['주거·관리비','통신','구독','세금·보험']],['🚗 교통',['교통·차']],['🛍 쇼핑·건강',['쇼핑','의료']],['🎈 여가·관계',['여행·여가','경조사']]];
+const catGroup=c=>(CAT_GROUPS.find(([,l])=>l.includes(c))||['📦 기타'])[0];
+function applyCats(){{const c0=Store.get('cats');if(c0&&!c0.v069&&Array.isArray(c0.지출)){const l=c0.지출.slice();if(!l.includes('배달'))l.splice(Math.max(0,l.indexOf('외식·데이트')+1)||l.length,0,'배달');Store.recs.cats={...c0,지출:l,v069:true};Store.save();Sync.push([Store.recs.cats])}}
+  const c=Store.get('cats');for(const t of Object.keys(CATS0)){const v=c&&Array.isArray(c[t])?c[t].filter(Boolean):null;CATS[t]=v&&v.length?v:CATS0[t].slice()}}
 const WHO=['주니','영이','같이'];
 const whoCls=w=>w==='주니'?'j':w==='영이'?'y':'t';
 const won=n=>(Math.round(n)||0).toLocaleString('ko-KR');
@@ -356,11 +361,13 @@ function vReport(){
   const ms=[...Array(6)].map((_,i)=>addMonth(cur,i-5));const ds=ms.map(monthData);
   const mx=Math.max(...ds.map(d=>Math.max(d.spend,d.inc,d.sav)),1);
   const d=monthData(cur);const by={};for(const e of d.es.filter(e=>e.type==='지출')){const k=e.cat;by[k]=by[k]||{주니:0,영이:0,같이:0};by[k][e.who]+=Number(e.amount)}
-  const rows=Object.entries(by).sort((a,b)=>(b[1].주니+b[1].영이+b[1].같이)-(a[1].주니+a[1].영이+a[1].같이));
+  const tot=v=>v.주니+v.영이+v.같이;const rows=Object.entries(by).sort((a,b)=>tot(b[1])-tot(a[1]));
+  const G={};for(const[c,v]of rows){const g=catGroup(c);G[g]=G[g]||[{주니:0,영이:0,같이:0},[]];for(const w of WHO)G[g][0][w]+=v[w];G[g][1].push([c,v])}
+  const grows=Object.entries(G).map(([g,[v,subs]])=>[g,v,subs]).sort((a,b)=>tot(b[1])-tot(a[1]));
   return `<div class="view"><div class="toolbar">${monthNav()}</div><div class="cols">
   <div class="card"><h3>최근 6개월</h3><div class="legend"><span><i style="background:#f29bb6"></i>지출</span><span><i style="background:#4fae6a"></i>수입</span><span><i style="background:var(--coin)"></i>저축</span></div>
   <div class="trend">${ds.map((x,i)=>`<div class="c"><div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;height:100%">${[['#f29bb6',x.spend],['#4fae6a',x.inc],['var(--coin)',x.sav]].map(([c,v])=>v?`<i title="${won(v)}" style="display:block;width:12px;height:${Math.max(3,v/mx*100)}%;background:${c};border:2px solid var(--line)"></i>`:'<i style="display:block;width:12px"></i>').join('')}</div><span>${Number(ms[i].slice(5))}월</span></div>`).join('')}</div></div>
-  <div class="card"><h3>${mLabel(cur)} 분류별 지출</h3>${rows.length?`<div class="tblwrap"><table><tr><th>분류</th><th class="m">주니</th><th class="m">영이</th><th class="m">같이</th><th class="m">합계</th></tr>${rows.map(([c,v])=>`<tr><td>${esc(c)}</td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m"><b>${won(v.주니+v.영이+v.같이)}</b></td></tr>`).join('')}<tr><td><b>합계</b></td><td class="m">${won(d.byWho.주니)}</td><td class="m">${won(d.byWho.영이)}</td><td class="m">${won(d.byWho.같이)}</td><td class="m"><b>${won(d.spend)}</b></td></tr></table></div>`:'<div class="empty">이 달 지출 기록이 없어요.</div>'}</div></div></div>`}
+  <div class="card"><h3>${mLabel(cur)} 분류별 지출</h3>${rows.length?`<div class="tblwrap"><table><tr><th>분류</th><th class="m">주니</th><th class="m">영이</th><th class="m">같이</th><th class="m">합계</th></tr>${grows.map(([g,v,subs])=>`<tr class="grp"><td><b>${g}</b> <span class="small">${d.spend?Math.round(tot(v)/d.spend*100):0}%</span></td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m"><b>${won(tot(v))}</b></td></tr>${subs.map(([c,v])=>`<tr class="sub"><td>└ ${esc(c)}</td><td class="m">${won(v.주니)}</td><td class="m">${won(v.영이)}</td><td class="m">${won(v.같이)}</td><td class="m">${won(tot(v))}</td></tr>`).join('')}`).join('')}<tr><td><b>합계</b></td><td class="m">${won(d.byWho.주니)}</td><td class="m">${won(d.byWho.영이)}</td><td class="m">${won(d.byWho.같이)}</td><td class="m"><b>${won(d.spend)}</b></td></tr></table></div>`:'<div class="empty">이 달 지출 기록이 없어요.</div>'}</div></div></div>`}
 
 function vWish(){
   const ws=Store.all('wish').sort((a,b)=>b.t-a.t);const S={new:'접수',doing:'만드는 중',done:'반영됨'};
@@ -523,7 +530,8 @@ dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button')
   if(b.parentElement.dataset.chips==='type'){const t=b.dataset.c;document.getElementById('catBox').innerHTML=chips('cat',CATS[t],CATS[t][0]);document.getElementById('payBox').hidden=t!=='지출'}});
 // 카드 결제 문자·카톡 알림·쿠팡 알림 글자 → {amount,date,memo,cat,cancel}
 const CAT_HINTS=[
-  ['식비',/쿠팡이츠|배달의민족|배민|요기요|땡겨요|김밥|분식|국밥|치킨|피자|버거|맥도날드|롯데리아|맘스터치|서브웨이|식당|반찬/i],
+  ['배달',/쿠팡이츠|배달의민족|배민|요기요|땡겨요/i],
+  ['식비',/김밥|분식|국밥|치킨|피자|버거|맥도날드|롯데리아|맘스터치|서브웨이|식당|반찬/i],
   ['구독',/와우|멤버십|넷플릭스|netflix|유튜브|youtube|멜론|스포티파이|spotify|디즈니|티빙|웨이브|왓챠|apple\.com|google|구글플레이|정기결제/i],
   ['카페·간식',/스타벅스|starbucks|커피|카페|이디야|투썸|메가엠지씨|메가커피|컴포즈|빽다방|폴바셋|할리스|베이커리|파리바게|뚜레쥬르|배스킨|던킨|설빙|GS25|CU\b|씨유|세븐일레븐|이마트24|편의점/i],
   ['장보기',/이마트|홈플러스|롯데마트|코스트코|트레이더스|노브랜드|하나로|컬리|오아시스|마트|정육|청과/i],
