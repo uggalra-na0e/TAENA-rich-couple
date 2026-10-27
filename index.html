@@ -221,7 +221,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.1';
+const VERSION='1.0.2';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -354,9 +354,9 @@ function vHome(){
   <div class="side">
     ${(()=>{const T=spendSum(cur),B=T.by;const hasT=B.total.같이>0;
       const row=(l,o,sub,cls)=>`<tr class="${cls||''}"><td>${l}${sub?`<div class="small">${sub}</div>`:''}</td><td class="m">${won(o.주니)}</td><td class="m">${won(o.영이)}</td>${hasT?`<td class="m">${won(o.같이)}</td>`:''}<td class="m"><b>${won(o.all)}</b></td></tr>`;
-      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span>${(()=>{const pm=addMonth(cur,-1),P=spendSum(pm);return `<span class="small cardnote" title="${mLabel(pm)} 총 지출 ${won(P.total)}원 (현금 ${won(P.cash)} · 카드 사용 ${won(P.bill)} · 고정 ${won(P.fixed)} · 대출 ${won(P.loan)})">${Number(pm.slice(5))}월: 총 지출 ${man(P.total)} · 카드 ${man(P.bill)}</span>`})()}</div>
+      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span>${(()=>{const pm=addMonth(cur,-1),P=spendSum(pm);return `<span class="small cardnote" title="${mLabel(pm)} 총 지출 ${won(P.total)}원 (현금 ${won(P.cash)} · 카드값 ${won(P.bill)} · 고정 ${won(P.fixed)} · 대출 ${won(P.loan)})">${Number(pm.slice(5))}월 총 지출 ${man(P.total)} · 카드값 ${man(P.bill)}</span>`})()}</div>
       <div class="tblwrap"><table class="sumtbl"><tr><th></th><th class="m"><span class="who j">주니</span></th><th class="m"><span class="who y">영이</span></th>${hasT?'<th class="m"><span class="who t">같이</span></th>':''}<th class="m">합계</th></tr>
-      ${row('<span class="ic">💵</span>현금지출',B.cash)}${row('<span class="ic">💳</span>카드 사용',B.bill)}${row('<span class="ic">🔁</span>고정지출',B.fixed)}${T.loan?row('<span class="ic">🏦</span>대출',B.loan):''}${row('<b>총 지출</b>',B.total,'','tot')}</table></div>
+      ${row('<span class="ic">💵</span>현금지출',B.cash)}${row('<span class="ic">💳</span>카드값',B.bill)}${row('<span class="ic">🔁</span>고정지출',B.fixed)}${T.loan?row('<span class="ic">🏦</span>대출',B.loan):''}${row('<b>총 지출</b>',B.total,'','tot')}</table></div>
 </div>`})()}
     ${upcomingCard()}
     ${cur===ym(today())&&new Date().getDate()<=7?reviewCard(addMonth(cur,-1),'지난달('+Number(addMonth(cur,-1).slice(5))+'월) 돌아보기'):''}
@@ -464,6 +464,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.2','10/27','총 지출 표 이름을 다시 "카드값"으로 (그 달에 카드로 쓴 돈)'],
   ['1.0.1','10/27','총 지출 옆에 지난달 총 지출·카드 사용을 작게 표시'],
   ['1.0.0','10/27','총 지출을 쓴 달 기준으로: 카드로 쓴 돈도 쓴 달에 바로 들어가요. 다음 달 카드값을 적으면 기록 안 된 결제만큼 자동으로 채워요'],
   ['0.9.9','10/27','총 지출 옆에 "이번 달 카드 사용 ○원 → 다음 달 카드값" 참고 표시'],
