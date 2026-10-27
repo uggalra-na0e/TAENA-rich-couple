@@ -164,8 +164,8 @@ html.widget .fab{display:none}
   </div>
   <div class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-v="home">우리집</button>
-    <button class="tab" role="tab" data-v="spend">지출</button>
     <button class="tab" role="tab" data-v="card">카드값</button>
+    <button class="tab" role="tab" data-v="spend">현금지출</button>
     <button class="tab" role="tab" data-v="fixed">고정지출</button>
     <button class="tab" role="tab" data-v="save">모은 돈</button>
     <button class="tab" role="tab" data-v="report">리포트</button>
@@ -182,7 +182,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.6.5';
+const VERSION='0.6.6';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -859,7 +859,7 @@ function drawHome(){
   const tint=document.createElement('div');tint.id='nightTint';tint.className='nighttint';tint.hidden=!night();room.appendChild(tint);
   tag(P(8.9,5.9,0),'모은 돈 <b>'+man(saved)+'</b>','tag',-17,'save');
   tag(P(0,8.1,5.7),Number(cur.slice(5))+'월 카드값 <b>'+man(d.bill)+'</b>','tag',0,'card');
-  tag(P(2.6,9.6,1.6),'지출 <b>'+man(d.spend)+'</b>','tag',0,'spend');
+  tag(P(2.6,9.6,1.6),'현금지출 <b>'+man(d.spend)+'</b>','tag',0,'spend');
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const fx=fixedFor(cur),left=fx.filter(x=>!x.paid).length;if(fx.length)tag(P(3.2,0,6.6),'고정지출 <b>'+man(fx.reduce((a,x)=>a+Number(x.f.amount||0),0))+'</b>'+(left?' · '+left+'건 남음':' · 다 냄'),'tag',0,'fixed')}
   for(const w of['주니','영이']){const c=Anim.c[w],p=P(c.x,c.y);
