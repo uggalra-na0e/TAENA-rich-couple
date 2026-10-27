@@ -119,7 +119,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.tb{margin:4px 0}.keeptag{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fffaf0;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:3px 6px;font:inherit;font-size:10px;line-height:1.2;cursor:pointer;text-align:left;min-width:96px}.keeptag i{display:block;height:5px;border:1px solid var(--line);background:#fff}.keeptag s{display:block;height:100%}
+.tb{margin:4px 0}.keeptag{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fffaf0;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:3px 6px;font:inherit;font-size:10px;line-height:1.2;cursor:pointer;text-align:left;min-width:96px}.keeptag i{display:block;height:5px;border:1px solid var(--line);background:#fff}.keeptag s{display:block;height:100%}.inctag{right:auto;left:6px;cursor:default;gap:1px}.inctag button{font:inherit;border:0;background:none;padding:0;cursor:pointer;color:inherit;text-align:left}.inctag .ir{display:flex;align-items:center;gap:3px}.inctag .ir b{margin-left:auto}.inctag .ip{width:13px;height:13px;line-height:11px;text-align:center;border:1px solid var(--line);background:#ffe08a;font-weight:700}
 .recent>h3{height:18px;overflow:visible}.recent>h3 .who{line-height:1.2}
 button.lnk{all:unset;cursor:pointer;text-decoration:underline dotted}
 .cardnote{font-size:10.5px;font-weight:400;margin-left:8px;letter-spacing:0;white-space:nowrap;line-height:1;vertical-align:middle;display:inline-block}
@@ -222,7 +222,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.4';
+const VERSION='1.0.5';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -478,6 +478,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.5','10/27','방 그림 왼쪽 아래에 이번 달 수입(월급·부수입) 칸, ＋로 바로 적기'],
   ['1.0.4','10/27','현금지출 탭엔 현금만, 카드값 탭엔 그 달에 카드로 쓴 기록 + 청구서 맞춰 보기 + 카드로 나가는 고정지출도 함께 표시(총 지출엔 한 번만), 방 그림 총 지출을 누르면 내역 표'],
   ['1.0.3','10/27','방 그림의 "○월 카드값"도 그 달에 카드로 쓴 돈으로'],
   ['1.0.2','10/27','총 지출 표 이름을 다시 "카드값"으로 (그 달에 카드로 쓴 돈)'],
@@ -1268,6 +1269,8 @@ function drawHome(){
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const V=verdict(cur),g=document.createElement('button');g.type='button';g.dataset.go='inc';g.className='keeptag';g.title='월급 − 총 지출(대출 포함). 수입 탭에서 목표를 바꿀 수 있어요';
    g.innerHTML=`<span>🎯 ${Math.round(V.goal/1e4)}만원 남기기</span><i><s style="width:${V.pct}%;background:${V.col}"></s></i><span>${V.sal?`<b style="color:${V.col}">${V.left>=0?'+':''}${man(V.left)}</b> ${V.face}`:'월급 적으면 시작'}</span>`;room.appendChild(g)}
+  {const es=monthData(cur).es.filter(e=>e.type==='수입'),sal=es.filter(isSalary).reduce((a,e)=>a+Number(e.amount||0),0),side=es.reduce((a,e)=>a+Number(e.amount||0),0)-sal,d=document.createElement('div');d.className='keeptag inctag';
+   d.innerHTML=`<button type="button" class="ih" data-go="inc">💰 ${Number(cur.slice(5))}월 수입</button><span class="ir">월급 <b>${man(sal)}</b><button type="button" class="ip" data-add="수입" data-cat="월급" title="월급 적기">＋</button></span><span class="ir">부수입 <b>${man(side)}</b><button type="button" class="ip" data-add="수입" data-cat="안 뗀 부업수입" title="부수입 적기">＋</button></span>`;room.appendChild(d)}
   {const fx=fixedFor(cur),left=fx.filter(x=>!x.paid).length;if(fx.length)tag(P(3.2,0,6.6),'고정지출 <b>'+man(fx.reduce((a,x)=>a+Number(x.f.amount||0),0))+'</b>'+(left?' · '+left+'건 남음':' · 다 냄'),'tag',0,'fixed')}
   for(const w of['주니','영이']){const c=Anim.c[w],p=P(c.x,c.y);
     const name=tag(p,w,'name',2);
