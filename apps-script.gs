@@ -13,6 +13,7 @@ function out_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 function doGet(e) {
+  if (e.parameter.text) return addInbox_(e.parameter);
   if ((e.parameter.key || '') !== PASSWORD) return out_({ ok: false, error: 'bad key' });
   const since = Number(e.parameter.since || 0);
   const rows = sheet_().getDataRange().getValues().slice(1)
@@ -20,7 +21,30 @@ function doGet(e) {
     .map(r => ({ id: r[0], json: r[1], t: Number(r[2]) }));
   return out_({ ok: true, rows: rows, now: Date.now() - 1000 });
 }
+// 폰 자동화(MacroDroid 등)가 결제 알림 글자를 보내면 'inbox' 기록으로 넣어요. 가계부 앱이 읽어서 지출로 바꿔요.
+function addInbox_(p) {
+  if ((p.key || '') !== PASSWORD) return out_({ ok: false, error: 'bad key' });
+  const text = String(p.text || '').slice(0, 1000);
+  if (!text.trim()) return out_({ ok: false, error: 'no text' });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const s = sheet_();
+    const last = Math.max(2, s.getLastRow() - 30);
+    const recent = s.getLastRow() > 1 ? s.getRange(last, 2, s.getLastRow() - last + 1, 1).getValues() : [];
+    const now = Date.now();
+    for (const [j] of recent) { // 같은 알림이 두 번 오면 한 번만
+      try { const o = JSON.parse(j); if (o.kind === 'inbox' && o.text === text && now - o.t < 10 * 60000) return out_({ ok: true, dup: true }); } catch (err) {}
+    }
+    const rec = { id: 'in_' + now + '_' + Math.floor(Math.random() * 1e6), kind: 'inbox', text: text, who: String(p.who || ''), t: now };
+    s.appendRow([rec.id, JSON.stringify(rec), now]);
+    return out_({ ok: true });
+  } finally {
+    lock.releaseLock();
+  }
+}
 function doPost(e) {
+  if (e.parameter && e.parameter.text) return addInbox_(e.parameter);
   const body = JSON.parse(e.postData.contents || '{}');
   if (body.key !== PASSWORD) return out_({ ok: false, error: 'bad key' });
   const lock = LockService.getScriptLock();

@@ -242,10 +242,18 @@ const Sync={
     catch(e){this.status('인터넷 연결을 확인해 주세요 (기록은 이 컴퓨터에 남아 있어요)','err')}},
   async pull(){const c=this.cfg();if(!c)return;
     try{const r=await fetch(c.url+(c.url.includes('?')?'&':'?')+'key='+encodeURIComponent(c.key)+'&since='+this.since);const j=await r.json();if(!j.ok)throw new Error(j.error||'fail');
-      Store.merge(j.rows.map(x=>{try{return JSON.parse(x.json)}catch(e){return null}}));this.since=j.now;ls.set('jy.since',j.now);
+      Store.merge(j.rows.map(x=>{try{return JSON.parse(x.json)}catch(e){return null}}));this.since=j.now;ls.set('jy.since',j.now);inboxRun();
       await this.flush();if(!this.queue.length)this.status('함께 쓰는 중 · '+new Date().toTimeString().slice(0,5),'on')}
     catch(e){this.status(e.message==='bad key'?'우리집 비밀번호가 달라요':'인터넷 연결을 확인해 주세요','err')}}
 };
+
+// 폰이 보낸 결제 알림(inbox) → 지출 기록. 두 컴퓨터가 같이 처리해도 같은 id라 한 번만 남아요
+function inboxRun(){const list=Store.all('inbox');if(!list.length)return;let n=0;
+  for(const ib of list){const p=parsePay(ib.text);const who=WHO.includes(ib.who)?ib.who:'주니';
+    if(p&&p.cancel){const old=Store.all('entry').filter(e=>e.src==='auto'&&e.amount===p.amount&&e.who===who&&(!p.memo||e.memo===p.memo)).sort((a,b)=>b.date.localeCompare(a.date))[0];if(old){Store.recs[old.id]={...old,del:true,t:Date.now()};Sync.push([Store.recs[old.id]]);n++}}
+    else if(p){const id='auto_'+ib.id;if(!Store.recs[id]){const e={id,kind:'entry',type:'지출',who,amount:p.amount,cat:p.cat||CATS.지출[CATS.지출.length-1],memo:p.memo,date:p.date,pay:'카드',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
+    Store.recs[ib.id]={...ib,del:true,t:Date.now()};Sync.push([Store.recs[ib.id]])}
+  Store.save();Store.changed();if(n)toast('폰 결제 알림 '+n+'건을 가계부에 적었어요')}
 
 /* ---------- 계산 ---------- */
 function monthData(m){
