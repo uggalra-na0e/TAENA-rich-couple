@@ -223,7 +223,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.8';
+const VERSION='1.0.9';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -377,7 +377,7 @@ function sumTable(m,link){const T=spendSum(m),B=T.by;const hasT=B.total.같이>0
   const lab=(l,go)=>link&&go?`<button type="button" class="lnk" data-go="${go}">${l} ›</button>`:l;
   const row=(l,o,cls)=>`<tr class="${cls||''}"><td>${l}</td><td class="m">${won(o.주니)}</td><td class="m">${won(o.영이)}</td>${hasT?`<td class="m">${won(o.같이)}</td>`:''}<td class="m"><b>${won(o.all)}</b></td></tr>`;
   return `<div class="tblwrap"><table class="sumtbl"><tr><th></th><th class="m"><span class="who j">주니</span></th><th class="m"><span class="who y">영이</span></th>${hasT?'<th class="m"><span class="who t">같이</span></th>':''}<th class="m">합계</th></tr>
-  ${row('<span class="ic">💵</span>'+lab('현금지출','spend'),B.cash)}${row('<span class="ic">💳</span>'+lab('카드값','card'),B.bill)}${row('<span class="ic">🔁</span>'+lab('고정지출','fixed'),B.fixed)}${T.loan?row('<span class="ic">🏦</span>'+lab('대출','fixed'),B.loan):''}${row('<b>총 지출</b>',B.total,'tot')}</table></div>`}
+  ${row('<span class="ic">💵</span>'+lab('현금','spend'),B.cash)}${row('<span class="ic">💳</span>'+lab('카드','card'),B.bill)}${row('<span class="ic">🔁</span>'+lab('고정','fixed'),B.fixed)}${T.loan?row('<span class="ic">🏦</span>'+lab('대출','fixed'),B.loan):''}${row('<b>총액</b>',B.total,'tot')}</table></div>`}
 function spendSum(m){const d=monthData(m);const z=()=>({주니:0,영이:0,같이:0,all:0});const add=(o,w,v)=>{v=Number(v||0);o[WHO.includes(w)?w:'같이']+=v;o.all+=v};
   // 쓴 달 기준: 카드로 쓴 돈도 쓴 달에 세요. 다음 달 카드값(청구서)은 맞춰 보기용 —
   // 청구서가 기록된 카드 사용 + 카드 고정지출보다 크면 그 차이(알림이 안 잡힌 결제)를 이 달 카드 사용에 더해요
@@ -487,6 +487,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.9','10/27','총 지출 표 이름 짧게: 현금·카드·고정·대출·총액'],
   ['1.0.8','10/27','폰 앱 설치 지원: 크롬에서 열면 위쪽에 📲 앱 설치 버튼'],
   ['1.0.7','10/27','전체 기록 보기 → 이 달 모든 기록(현금·카드·수입·저축 골라 보기)'],
   ['1.0.6','10/27','연동 점검: 리포트·돌아보기·위젯·말풍선 지출도 총 지출과 같은 숫자로, 분류별 지출 합계 = 총 지출, 카드값 탭 큰 숫자 = 방 그림 카드값, 고정지출·대출은 등록한 달부터 셈(언제부터 칸)'],
