@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.20';
+const VERSION='1.0.21';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -498,6 +498,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.21','10/28','롯데 로카페이 "결제" 알림(대중교통 등)도 자동 기록, 카드값 안내 문자는 무시'],
   ['1.0.20','10/28','정해 둔 계좌로 보낸 이체완료 문자는 현금지출로 자동 기록(설정 → 자동으로 적을 이체)'],
   ['1.0.19','10/27','앱을 열면 항상 우리집부터(폰 뒤로가기가 우리집으로 오게)'],
   ['1.0.18','10/27','새 버전이 폰에 바로 반영되게(옛날 화면 안 남게), 폰 우리집 버튼 고정'],
@@ -786,6 +787,7 @@ dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button')
   if(box.dataset.chips==='type'){const t=b.dataset.c;document.getElementById('catBox').innerHTML=catChips(t,CATS[t][0]);document.getElementById('payBox').hidden=t!=='지출'}});
 // 카드 결제 문자·카톡 알림·쿠팡 알림 글자 → {amount,date,memo,cat,cancel}
 const CAT_HINTS=[
+  ['교통·차',/대중교통|모바일 ?교통|교통카드|후불교통|지하철|버스/i],
   ['배달',/쿠팡이츠|배달의민족|배민|요기요|땡겨요/i],
   ['식비',/김밥|분식|국밥|치킨|피자|버거|맥도날드|롯데리아|맘스터치|서브웨이|식당|반찬/i],
   ['구독',/와우|멤버십|넷플릭스|netflix|유튜브|youtube|멜론|스포티파이|spotify|디즈니|티빙|웨이브|왓챠|apple\.com|google|구글플레이|정기결제/i],
@@ -801,7 +803,8 @@ const CAT_HINTS=[
 const CARD_RX=/(삼성|롯데|신한|현대|KB국민|국민|하나|우리|NH농협|농협|BC|비씨|씨티|카카오뱅크|토스|IBK|기업|쿠팡페이|쿠페이)/;
 function guessCat(s){const list=CATS.지출;for(const[c,rx]of CAT_HINTS)if(rx.test(s)&&list.includes(c))return c;return ''}
 function parsePay(raw){
-  const s=String(raw||'').replace(/\r/g,'').replace(/\[Web발신\]|\(광고\)/g,'').trim();if(!s)return null;
+  const s=String(raw||'').replace(/\r/g,'').replace(/\[Web발신\]|\(광고\)/g,'').replace(/로카페이|LOCA ?PAY/gi,'').trim();if(!s)return null;
+  if(/결제\s*예정|결제일|청구\s*금액|청구서|납부\s*안내|명세서/.test(s))return null; // 카드값 안내는 쓴 돈이 아니에요
   // 금액: 누적·잔액·한도·포인트 금액은 건너뛰기
   let amount=0;const amRx=/(?:금액|결제금액|승인금액)?\s*[:：]?\s*([0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)\s*원/g;let m;
   while((m=amRx.exec(s))){const before=s.slice(Math.max(0,m.index-8),m.index);if(/누적|잔액|한도|포인트|적립|잔여/.test(before))continue;amount=Number(m[1].replace(/,/g,''));break}
@@ -830,6 +833,7 @@ function parsePay(raw){
     memo=cand||''}
   memo=memo.replace(/\s*(일시불|\d+개월|할부).*/,'').replace(/[\[\]]/g,'').trim().slice(0,30);
   if(!memo&&/쿠팡/.test(s))memo='쿠팡';
+  if(!memo&&/대중교통|모바일 ?교통|교통카드/.test(s))memo='대중교통';
   const card=(s.match(CARD_RX)||[])[1]||'';
   return {amount,date,memo,card,type:'지출',cat:guessCat(memo+' '+s),cancel:/취소/.test(s)}}
 // 자동으로 적을 이체: 설정에 '받는 계좌 = 분류 = 내용' 한 줄씩
