@@ -182,7 +182,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.6.3';
+const VERSION='0.6.4';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -628,6 +628,20 @@ function catsDlg(){applyCats();
     if(Object.keys(CATS0).some(t=>!o[t].length))return '분류가 하나도 없는 칸이 있어요.';
     Store.put(o);toast('분류를 바꿨어요')});
   document.getElementById('catReset').onclick=()=>document.querySelectorAll('[data-cat]').forEach(el=>el.value=CATS0[el.dataset.cat].join(', '))}
+// 지운 기록은 del:true로 남아 있어서 되살릴 수 있어요
+const TRASH_KINDS={entry:'기록',bill:'카드값',fixed:'고정지출',account:'통장',wish:'건의'};
+function trashLabel(r){const w=r.who?`<span class="who ${whoCls(r.who)}">${esc(r.who)}</span>`:'';
+  if(r.kind==='entry')return `${esc(r.date||'')} ${w}${esc(r.type||'')} · ${esc(r.memo||r.cat||'')} <b>${won(r.amount)}원</b>`;
+  if(r.kind==='bill')return `${esc(r.month||'')} ${w}${esc(r.card||'')} 카드값 <b>${won(r.amount)}원</b>`;
+  if(r.kind==='fixed')return `매달 ${r.day}일 ${w}${esc(r.name||'')} <b>${won(r.amount)}원</b>`;
+  if(r.kind==='account')return `${w}${esc(r.name||'')} 통장 <b>${won(r.balance)}원</b>`;
+  return `${w}${esc((r.text||'').slice(0,40))}`}
+function trashDlg(){const list=Object.values(Store.recs).filter(r=>r.del&&TRASH_KINDS[r.kind]).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,200);
+  openDlg('🗑 휴지통',list.length?`<div class="small">지운 순서대로 최근 200개까지 보여요. "살리기"를 누르면 원래 자리로 돌아가요.</div>
+  <div class="tblwrap"><table>${list.map(r=>`<tr><td class="small" style="white-space:nowrap">${new Date(r.t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})} 지움<br><span class="cat">${TRASH_KINDS[r.kind]}</span></td><td>${trashLabel(r)}</td><td class="m"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px" data-restore="${esc(r.id)}">살리기</button></td></tr>`).join('')}</table></div>`
+  :'<div class="empty">휴지통이 비어 있어요.</div>','닫기',()=>{});
+  document.getElementById('dbody').onclick=e=>{const b=e.target.closest('[data-restore]');if(!b)return;const r=Store.recs[b.dataset.restore];if(!r)return;
+    const {del,...rest}=r;Store.put(rest);b.closest('tr').remove();toast('되살렸어요')}}
 function setDlg(){const c=Sync.cfg()||{url:'',key:''};
   openDlg('설정',`<div class="small"><b>함께 쓰기 (구글 시트 연결)</b><br>두 컴퓨터에 같은 주소와 비밀번호를 넣으면 기록이 서로 보여요. 비워 두면 이 컴퓨터에만 저장돼요.</div>
   <label class="f">연결 주소<input type="url" id="fUrl" value="${esc(c.url)}" placeholder="https://script.google.com/macros/s/.../exec"></label>
@@ -635,6 +649,7 @@ function setDlg(){const c=Sync.cfg()||{url:'',key:''};
   <div class="small"><b>백업</b> · 지금 기록 ${Object.values(Store.recs).filter(r=>!r.del).length}개</div>
   <div class="toolbar"><button type="button" class="btn ghost" id="bkOut">백업 글자 복사</button><button type="button" class="btn ghost" id="bkIn">백업 붙여넣기</button></div>
   <label class="f">수입에서 뺄 보낸 사람 이름 · 내 계좌끼리 옮긴 돈은 수입으로 안 적어요 (쉼표로 나눠 적기, 예: 홍길동, 김영희)<input type="text" id="fSelf" value="${esc(settings().selfNames||'')}"></label>
+  <div class="small"><b>휴지통</b> · 지운 기록을 다시 살릴 수 있어요</div><div class="toolbar"><button type="button" class="btn ghost" id="trashBtn">🗑 휴지통 열기</button></div>
   <div class="small"><b>분류</b> · 식비, 카페 같은 분류 이름을 바꾸거나 더할 수 있어요</div><div class="toolbar"><button type="button" class="btn ghost" id="catEdit">분류 바꾸기</button></div>
   <div class="small"><b>폰·다른 컴퓨터 연결</b> · QR을 폰 카메라로 찍거나 링크를 카톡으로 보내면 설정 없이 바로 연결돼요</div><div class="toolbar"><button type="button" class="btn ghost" id="qrBtn">연결 QR·링크 만들기</button></div><div id="qrBox"></div>
   <textarea id="bkTxt" placeholder="백업 글자가 여기에 나와요" hidden></textarea>`,'저장',()=>{
@@ -643,6 +658,7 @@ function setDlg(){const c=Sync.cfg()||{url:'',key:''};
     if(url&&!key)return '비밀번호도 넣어 주세요.';
     if(url){ls.set('jy.sheet',{url,key});ls.set('jy.since',0);Sync.since=0;Sync.queue=Object.values(Store.recs);ls.set('jy.queue',Sync.queue)}else{ls.set('jy.sheet',null)}
     Sync.start();toast(url?'연결했어요. 기록을 맞추는 중이에요':'이 컴퓨터에만 저장해요')});
+  document.getElementById('trashBtn').onclick=()=>trashDlg();
   document.getElementById('bkOut').onclick=async()=>{const t=document.getElementById('bkTxt');t.hidden=false;t.value=JSON.stringify(Object.values(Store.recs));t.select();try{await navigator.clipboard.writeText(t.value);toast('복사했어요')}catch(e){toast('글자를 직접 복사해 주세요')}};
   document.getElementById('qrBtn').onclick=()=>{const c=Sync.cfg();const box=document.getElementById('qrBox');
     if(!c||!c.url){box.innerHTML='<div class="small">먼저 위에 연결 주소와 비밀번호를 넣고 저장해 주세요.</div>';return}
@@ -671,7 +687,7 @@ document.addEventListener('click',e=>{
   else if(ds.mon){cur=addMonth(cur,Number(ds.mon));render()}
   else if(ds.add)entryDlg(ds.add);
   else if(ds.edit){const r=Store.get(ds.edit);if(r)entryDlg(r.type,r)}
-  else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);toast('지웠어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
+  else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);toast('지웠어요 · 설정 → 휴지통에서 되살릴 수 있어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
   else if(ds.bill)billDlg(ds.bill==='new'?null:Store.get(ds.bill));
   else if(ds.acc)accDlg(ds.acc==='new'?null:Store.get(ds.acc));
   else if(ds.goal)goalDlg();
