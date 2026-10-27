@@ -1,0 +1,27 @@
+{
+ "name": "주니와 영이 부자되자",
+ "short_name": "주니와 영이",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#cfe6ef",
+ "theme_color": "#9a6fd0",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  }
+ ],
+ "shortcuts": [
+  {
+   "name": "위젯",
+   "url": "./#widget"
+  }
+ ]
+}
