@@ -115,7 +115,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.bud{margin:6px 0}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
+.bud{margin:6px 0}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -177,7 +177,7 @@ html.widget .fab{display:none}
     <div class="right"><span class="live" id="live"><i></i><span id="liveTxt">이 컴퓨터에만 저장 중</span></span></div>
   </div>
   <div id="main"></div>
-<button type="button" class="fab" data-add="지출" aria-label="지출 적기">＋ 지출</button>
+<button type="button" class="fab" data-pickadd="1" aria-label="적기">＋ 적기</button>
 </div>
 
 <dialog id="dlg"><form method="dialog" id="dform"><div class="dh"><span id="dtitle"></span><button class="x" value="cancel" aria-label="닫기">✕</button></div><div class="db" id="dbody"></div><div class="df" id="dfoot"></div></form></dialog>
@@ -185,7 +185,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.8.2';
+const VERSION='0.8.3';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -320,7 +320,7 @@ function vHome(){
     </div>
   </div></div>
   <div class="card"><h3>최근 기록 <span class="r small">${WHO.filter(w=>d.byWho[w]).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(d.byWho[w])}`).join(' ')}</span></h3>${entryRows(sortDesc(d.es).slice(0,8))}
-    <div class="add"><button type="button" class="btn" data-add="지출">＋ 지출 적기</button><button type="button" class="btn alt" data-add="수입">＋ 수입 적기</button><button type="button" class="btn alt" data-add="저축">＋ 저축 적기</button><button type="button" class="btn ghost" data-go="spend">전체 기록 보기</button><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div>
+    <div class="add"><button type="button" class="btn" data-pickadd="1">＋ 적기 (지출·카드값·고정지출·수입…)</button><button type="button" class="btn ghost" data-go="spend">전체 기록 보기</button><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div>
   </div></div>`;
 }
 // 총 지출 = 현금지출 + 카드값 + 고정지출(카드값에 든 것 빼고) + 대출. 규칙은 가계부_계산규칙.md
@@ -342,7 +342,7 @@ function vSpend(){
   const d=monthData(cur);let list=sortDesc(d.es);if(spendWho!=='전체')list=list.filter(e=>e.who===spendWho);
   const tot=list.filter(e=>e.type==='지출').reduce((a,e)=>a+Number(e.amount),0);
   return `<div class="view"><div class="toolbar">${monthNav()}<span class="seg">${['전체',...WHO].map(w=>`<button type="button" data-who="${w}" aria-pressed="${w===spendWho}">${w}</button>`).join('')}</span>
-  <span class="sp" style="margin-left:auto"></span><button type="button" class="btn" data-add="지출">＋ 지출 적기</button><button type="button" class="btn alt" data-add="수입">＋ 수입</button><button type="button" class="btn alt" data-add="저축">＋ 저축</button></div>
+  <span class="sp" style="margin-left:auto"></span><button type="button" class="btn" data-pickadd="1">＋ 적기</button></div>
   <div class="card"><h3>${mLabel(cur)} ${spendWho==='전체'?'':spendWho+'의 '}기록 <span class="r">지출 합계 <b>${won(tot)}원</b></span></h3>${entryRows(list)}</div></div>`}
 
 function vCard(){
@@ -378,6 +378,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8.3','10/27','＋ 적기 버튼 하나로 통합: 현금지출·카드로 쓴 돈·카드값·고정지출·대출·수입/저축·통장 중에 골라 적기'],
   ['0.8.2','10/27','방 그림에 현금지출 표시 추가'],
   ['0.8.1','10/27','우리집 화면 정리: 쓴 돈+카드값 → 총 지출 한 칸, 예산 크게, 모은 돈 작게, 누가 쓴 돈은 최근 기록에'],
   ['0.8','10/27','분류별 한 달 예산(넘으면 빨간불), 달마다 돌아보기(매달 1~7일엔 우리집에 지난달 요약), 영수증 사진으로 채우기(베타)'],
@@ -693,9 +694,14 @@ function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const 
     msg.innerHTML=(p.cancel?'⚠ <b>취소</b> 문자예요. 예전 기록을 찾아 지우는 게 맞아요. ':'채웠어요. 확인하고 저장을 눌러 주세요. ')+(dupEntry(p)?'<br>⚠ 같은 날 같은 금액 기록이 이미 있어요.':'')+(selfIn(p)?'<br>⚠ 내 계좌끼리 옮긴 돈 같아요. 수입이 아니면 저장하지 마세요.':'')+(p.cat?'':'<br>분류는 직접 골라 주세요.')};
   ta.addEventListener('input',run);
   document.getElementById('smsPaste').onclick=async()=>{try{ta.value=await navigator.clipboard.readText();run()}catch(e){msg.textContent='위 칸을 길게 눌러 붙여넣기 해 주세요.';ta.focus()}}}
-function entryDlg(type,rec){
-  const r=rec||{type,who:me(),date:cur===ym(today())?today():cur+'-01',cat:CATS[type][0],pay:'카드'};
-  openDlg(rec?'기록 고치기':type+' 적기',`${!rec&&type!=='저축'?smsBox():''}
+// '＋ 적기' 하나로 모든 종류를 고르게
+const ADD_KINDS=[['cash','💵','현금지출','현금·계좌이체로 쓴 돈'],['cardUse','💳','카드로 쓴 돈','결제 하나하나 (문자 붙여넣기·영수증)'],['bill','🧾','카드값','이번 달 카드 청구 금액'],['fixed','🔁','고정지출','매달 나가는 돈 등록'],['loan','🏦','대출','대출 등록'],['inc','💰','수입·저축','월급·부업수입, 적금·투자에 넣은 돈 (안에서 골라요)'],['acc','🏧','통장','모은 돈 통장 추가']];
+function addPicker(){openDlg('뭘 적을까요?',`<div class="pick">${ADD_KINDS.map(([k,i,l,d])=>`<button type="button" data-pick="${k}"><span class="pi">${i}</span><b>${l}</b><span class="small">${d}</span></button>`).join('')}</div>`,'닫기',()=>{});
+  document.getElementById('dbody').onclick=e=>{const b=e.target.closest('[data-pick]');if(!b)return;const k=b.dataset.pick;dlg.close();
+    ({cash:()=>entryDlg('지출',null,'현금·이체'),cardUse:()=>entryDlg('지출',null,'카드'),bill:()=>billDlg(null),fixed:()=>fixedDlg(null),loan:()=>loanDlg(null),inc:()=>entryDlg('수입'),acc:()=>accDlg(null)})[k]()}}
+function entryDlg(type,rec,pay){
+  const r=rec||{type,who:me(),date:cur===ym(today())?today():cur+'-01',cat:CATS[type][0],pay:pay||'카드'};
+  openDlg(rec?'기록 고치기':(type==='지출'?(r.pay==='카드'?'카드로 쓴 돈':'현금지출'):type)+' 적기',`${!rec&&type!=='저축'?smsBox():''}
   <label class="f">종류${chips('type',['지출','수입','저축'],r.type)}</label>
   <label class="f">누가${chips('who',WHO,r.who)}</label>
   <label class="f">금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${r.amount?won(r.amount):''}" placeholder="예) 12,000" autocomplete="off"></label>
@@ -796,6 +802,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('button,[data-go]');if(!t)return;const ds=t.dataset;
   if(ds.v){view=ds.v;ls.set('jy.view',view);render()}
   else if(ds.mon){cur=addMonth(cur,Number(ds.mon));render()}
+  else if(ds.pickadd)addPicker();
   else if(ds.add)entryDlg(ds.add);
   else if(ds.edit){const r=Store.get(ds.edit);if(r)entryDlg(r.type,r)}
   else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);toast('지웠어요 · 설정 → 휴지통에서 되살릴 수 있어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
