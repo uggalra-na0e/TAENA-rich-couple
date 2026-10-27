@@ -184,7 +184,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.7.1';
+const VERSION='0.7.2';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -1056,9 +1056,11 @@ function drawHome(){
   tag(P(0,8.1,5.7),Number(cur.slice(5))+'월 카드값 <b>'+man(d.bill)+'</b>','tag',0,'card');
   // 총 지출 = 현금지출(카드 결제·고정지출 '냈어요' 기록은 빼고) + 그 달 카드값 + 카드 아닌 고정지출
   {const cash=d.es.filter(e=>e.type==='지출'&&e.pay!=='카드'&&!e.fixedRef).reduce((a,e)=>a+Number(e.amount||0),0);
-   const fixed=fixedFor(cur).filter(x=>!fixIsCard(x.f)).reduce((a,x)=>a+Number(x.f.amount||0),0); // 카드로 내는 고정지출은 카드값에 이미 들어 있어요
+   // 카드로 내는 고정지출은 카드값에 들어 있어요. 단, 그 사람 카드값을 아직 안 적었으면 고정지출로 세요
+   const billWho=new Set(d.bills.filter(b=>Number(b.amount)>0).map(b=>b.who));
+   const fixed=fixedFor(cur).filter(x=>!fixIsCard(x.f)||!billWho.has(x.f.who)).reduce((a,x)=>a+Number(x.f.amount||0),0);
    const loan=loansFor(cur).reduce((a,x)=>a+Number(x.l.monthly||0),0);
-   tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(cash+d.bill+fixed+loan)+'</b>','tag',0,'spend').title='현금지출 '+won(cash)+' + 카드값 '+won(d.bill)+' + 고정지출(카드 결제 제외) '+won(fixed)+(loan?' + 대출 '+won(loan):'')}
+   tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(cash+d.bill+fixed+loan)+'</b>','tag',0,'spend').title='현금지출 '+won(cash)+' + 카드값 '+won(d.bill)+' + 고정지출 '+won(fixed)+(loan?' + 대출 '+won(loan):'')}
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const fx=fixedFor(cur),left=fx.filter(x=>!x.paid).length;if(fx.length)tag(P(3.2,0,6.6),'고정지출 <b>'+man(fx.reduce((a,x)=>a+Number(x.f.amount||0),0))+'</b>'+(left?' · '+left+'건 남음':' · 다 냄'),'tag',0,'fixed')}
   for(const w of['주니','영이']){const c=Anim.c[w],p=P(c.x,c.y);
