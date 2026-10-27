@@ -119,7 +119,8 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.tb{margin:4px 0}hr.half{border:0;border-top:2px dashed #c9b28d;margin:8px 0 6px}.tb .row{font-size:12px}
+.tb{margin:4px 0}button.mini{padding:0 5px;font-size:10px;line-height:15px;box-shadow:2px 2px 0 var(--line);margin-left:3px;vertical-align:middle}
+hr.half{border:0;border-top:2px dashed #c9b28d;margin:8px 0 6px}.tb .row{font-size:12px}
 .vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th,.uptbl td{padding:3px 4px}.uptbl td{vertical-align:middle}.upwrap{max-height:150px;overflow:auto}.uptbl .ucd{width:86px;white-space:nowrap}.dday{white-space:nowrap}.uptbl .ucw{width:44px}.uptbl .ucb{width:22px;text-align:center}.uptbl td+td,.sumtbl td+td,.sumtbl th+th{border-left:1px dashed #c9b28d}.uptbl{border:1px dashed #c9b28d}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -209,7 +210,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.9.1';
+const VERSION='0.9.2';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -248,6 +249,9 @@ const Store={
 };
 const settings=()=>Store.get('settings')||{id:'settings',kind:'settings',goal:30000000,goalName:'우리 집 마련 첫걸음',cardDay:{주니:10,영이:14}};
 const me=()=>ls.get('jy.me','주니');
+let preWho=null;const takeWho=d=>{const w=preWho;preWho=null;return w||d};
+const mini=(l,a)=>`<button type="button" class="btn ghost mini" ${a}>${l}</button>`;
+const whoBtns=a=>`<span class="r">${['주니','영이'].map(w=>mini('＋'+w,a+' data-who="'+w+'"')).join('')}</span>`;
 
 /* ---------- 공유(동기화) ---------- */
 const Sync={
@@ -330,16 +334,16 @@ function vHome(){
   <div class="side">
     ${(()=>{const T=spendSum(cur),B=T.by;const hasT=B.total.같이>0;
       const row=(l,o,sub,cls)=>`<tr class="${cls||''}"><td>${l}${sub?`<div class="small">${sub}</div>`:''}</td><td class="m">${won(o.주니)}</td><td class="m">${won(o.영이)}</td>${hasT?`<td class="m">${won(o.같이)}</td>`:''}<td class="m"><b>${won(o.all)}</b></td></tr>`;
-      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span></div>
+      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span></div>
       <div class="tblwrap"><table class="sumtbl"><tr><th></th><th class="m"><span class="who j">주니</span></th><th class="m"><span class="who y">영이</span></th>${hasT?'<th class="m"><span class="who t">같이</span></th>':''}<th class="m">합계</th></tr>
       ${row('<span class="ic">💵</span>현금지출',B.cash)}${row('<span class="ic">💳</span>카드값',B.bill)}${row('<span class="ic">🔁</span>고정지출',B.fixed)}${T.loan?row('<span class="ic">🏦</span>대출',B.loan):''}${row('<b>총 지출</b>',B.total,'','tot')}</table></div>
 </div>`})()}
     ${upcomingCard()}
     ${cur===ym(today())&&new Date().getDate()<=7?reviewCard(addMonth(cur,-1),'지난달('+Number(addMonth(cur,-1).slice(5))+'월) 돌아보기'):''}
     <div class="grid2">
-      <div class="card halfcard"><h3>모은 돈 <span class="r small" title="목표 ${won(s.goal)}원 ${esc(s.goalName||'')}">목표 ${Math.floor(goalPct)}%</span></h3><div class="big" style="font-size:18px">${won(saved)}<span class="won">원</span></div>
+      <div class="card halfcard"><h3>모은 돈 <span class="r small" title="목표 ${won(s.goal)}원 ${esc(s.goalName||'')}">목표 ${Math.floor(goalPct)}% ${mini('고치기','data-go="save"')}</span></h3><div class="big" style="font-size:18px">${won(saved)}<span class="won">원</span></div>
         <div class="hp" style="height:8px"><span style="width:${goalPct}%"></span></div>${emerTotal()?`<div class="small">🛟 비상금 따로 ${won(emerTotal())}원</div>`:''}
-        <hr class="half"><h3>${Number(cur.slice(5))}월 수입</h3>${(()=>{const iw=w=>d.es.filter(e=>e.type==='수입'&&e.who===w).reduce((a,e)=>a+Number(e.amount||0),0);const T=spendSum(cur).total,left=d.inc-T;
+        <hr class="half"><h3>${Number(cur.slice(5))}월 수입 ${whoBtns('data-add="수입"')}</h3>${(()=>{const iw=w=>d.es.filter(e=>e.type==='수입'&&e.who===w).reduce((a,e)=>a+Number(e.amount||0),0);const T=spendSum(cur).total,left=d.inc-T;
           return `<div class="big" style="font-size:18px">${won(d.inc)}<span class="won">원</span></div><div class="small">${WHO.filter(w=>iw(w)).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(iw(w))}`).join(' ')||'아직 수입 기록이 없어요'}</div>${d.inc?`<div class="small">총 지출 빼고 <b style="color:${left>=0?'var(--good)':'var(--red)'}">${left>=0?'+':''}${won(left)}원</b></div>`:''}`})()}</div>
       ${budgetCard(cur)}
     </div>
@@ -404,6 +408,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.9.2','10/27','칸마다 작은 적기 버튼: 총 지출 ＋주니/＋영이, 곧 나갈 돈 등록, 모은 돈 고치기, 수입 ＋주니/＋영이'],
   ['0.9.1','10/27','모은 돈 칸을 반으로 나눠 아래에 이번 달 수입(주니·영이, 총 지출 빼고 남은 돈)'],
   ['0.9','10/27','폰 화면 최적화: 탭 한 줄로 밀어서 보기, 표가 글자 단위로 깨지지 않게, 우리집 순서(방→총 지출→곧 나갈 돈→모은 돈·예산→최근 기록)'],
   ['0.8.7','10/27','곧 나갈 돈을 줄선 있는 표로 (날짜 순, 누구 표시, 칸 맞춤)'],
@@ -488,7 +493,7 @@ function upcomingCard(){if(cur!==ym(today()))return '';const up=fixedFor(cur).fi
   const tr=(dd,name,kind,who,amt,btn)=>`<tr><td class="ucd">${ddTag(dd)}</td><td>${name} <span class="cat">${kind}</span></td><td class="ucw">${who?`<span class="who ${whoCls(who)}">${esc(who)}</span>`:''}</td><td class="m">${won(amt)}</td><td class="ucb">${btn||''}</td></tr>`;
   const rows=[...bl.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.b.card)+' 카드값','카드값',x.b.who,x.b.amount)})),...lu.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.l.name),'대출',x.l.who,x.l.monthly,`<button type="button" class="x" data-lpaid="${x.l.id}" title="냈어요 표시">☐</button>`)})),
     ...up.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.f.name),esc(fixPay(x.f.pay).replace(' (카드값에 포함)','')),x.f.who,x.f.amount,`<button type="button" class="x" data-paid="${x.f.id}" title="냈어요 표시">☐</button>`)}))].sort((a,b)=>a.dd-b.dd);
-  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈 <span class="r small">${rows.length}건</span></h3><div class="tblwrap upwrap"><table class="uptbl">${rows.map(r=>r.h).join('')}</table></div></div>`}
+  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈 <span class="r small">${rows.length}건 ${mini('등록','data-fixed="new"')}</span></h3><div class="tblwrap upwrap"><table class="uptbl">${rows.map(r=>r.h).join('')}</table></div></div>`}
 function vFixed(){const L=fixedFor(cur);const tot=L.reduce((a,x)=>a+Number(x.f.amount),0),left=L.filter(x=>!x.paid).reduce((a,x)=>a+Number(x.f.amount),0);
   return `<div class="view"><div class="toolbar">${monthNav()}<span style="margin-left:auto"></span><button type="button" class="btn" data-fixed="new">＋ 고정지출 추가</button></div>
   <div class="cols"><div class="card"><h3>${mLabel(cur)} 고정지출 <span class="r">합계 <b>${won(tot)}원</b> · 아직 안 낸 돈 <b style="color:var(--red)">${won(left)}원</b></span></h3>
@@ -497,7 +502,7 @@ function vFixed(){const L=fixedFor(cur);const tot=L.reduce((a,x)=>a+Number(x.f.a
 function togglePaid(fid){const f=Store.get(fid);if(!f)return;const id='fx_'+fid+'_'+cur;
   if(Store.get(id)){Store.del(id);toast('냈어요 표시를 뺐어요')}else{const day=Math.min(f.day,new Date(...cur.split('-').map(Number),0).getDate());
     Store.put({id,kind:'entry',type:'지출',who:f.who,amount:Number(f.amount),cat:f.cat,memo:f.name,date:cur+'-'+pad(day),pay:fixIsCard(f)?'카드':'현금·이체',fixedRef:fid});toast('냈어요! 지출에도 적었어요')}}
-function fixedDlg(rec){const r=rec||{name:'',who:'같이',amount:0,day:25,cat:'주거·관리비',pay:'자동이체'};
+function fixedDlg(rec){const r=rec||{name:'',who:takeWho('같이'),amount:0,day:25,cat:'주거·관리비',pay:'자동이체'};
   openDlg(rec?'고정지출 고치기':'고정지출 추가',`<label class="f">항목 이름<input type="text" id="fName" value="${esc(r.name)}" placeholder="예) 관리비, 넷플릭스, 실손보험"></label>
   <label class="f">누구${chips('who',WHO,r.who)}</label><label class="f">금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${r.amount?won(r.amount):''}"></label>
   <label class="f">매달 나가는 날 (일)<input type="number" min="1" max="31" id="fDay" value="${r.day}"></label>
@@ -643,6 +648,7 @@ const val=id=>document.getElementById(id).value.trim();
 const numVal=id=>Number(val(id).replace(/[^0-9.-]/g,''));
 function chips(name,list,sel){return `<div class="chips" data-chips="${name}">${list.map(c=>`<button type="button" aria-pressed="${c===sel}" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`}
 const chipVal=name=>document.querySelector(`[data-chips="${name}"] [aria-pressed="true"]`)?.dataset.c;
+dlg.addEventListener('close',()=>{preWho=null});
 dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button');if(!b)return;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
   if(b.parentElement.dataset.chips==='type'){const t=b.dataset.c;document.getElementById('catBox').innerHTML=chips('cat',CATS[t],CATS[t][0]);document.getElementById('payBox').hidden=t!=='지출'}});
 // 카드 결제 문자·카톡 알림·쿠팡 알림 글자 → {amount,date,memo,cat,cancel}
@@ -732,11 +738,11 @@ function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const 
   document.getElementById('smsPaste').onclick=async()=>{try{ta.value=await navigator.clipboard.readText();run()}catch(e){msg.textContent='위 칸을 길게 눌러 붙여넣기 해 주세요.';ta.focus()}}}
 // '＋ 적기' 하나로 모든 종류를 고르게
 const ADD_KINDS=[['cash','💵','현금지출','현금·계좌이체로 쓴 돈'],['cardUse','💳','카드로 쓴 돈','결제 하나하나 (문자 붙여넣기·영수증)'],['bill','🧾','카드값','이번 달 카드 청구 금액'],['fixed','🔁','고정지출','매달 나가는 돈 등록'],['loan','🏦','대출','대출 등록'],['inc','💰','수입·저축','월급·부업수입, 적금·투자에 넣은 돈 (안에서 골라요)'],['acc','🏧','통장','모은 돈 통장 추가']];
-function addPicker(){openDlg('뭘 적을까요?',`<div class="pick">${ADD_KINDS.map(([k,i,l,d])=>`<button type="button" data-pick="${k}"><span class="pi">${i}</span><b>${l}</b><span class="small">${d}</span></button>`).join('')}</div>`,'닫기',()=>{});
+function addPicker(){openDlg((preWho?preWho+' — ':'')+'뭘 적을까요?',`<div class="pick">${ADD_KINDS.map(([k,i,l,d])=>`<button type="button" data-pick="${k}"><span class="pi">${i}</span><b>${l}</b><span class="small">${d}</span></button>`).join('')}</div>`,'닫기',()=>{});
   document.getElementById('dbody').onclick=e=>{const b=e.target.closest('[data-pick]');if(!b)return;const k=b.dataset.pick;dlg.close();
     ({cash:()=>entryDlg('지출',null,'현금·이체'),cardUse:()=>entryDlg('지출',null,'카드'),bill:()=>billDlg(null),fixed:()=>fixedDlg(null),loan:()=>loanDlg(null),inc:()=>entryDlg('수입'),acc:()=>accDlg(null)})[k]()}}
 function entryDlg(type,rec,pay){
-  const r=rec||{type,who:me(),date:cur===ym(today())?today():cur+'-01',cat:CATS[type][0],pay:pay||'카드'};
+  const r=rec||{type,who:takeWho(me()),date:cur===ym(today())?today():cur+'-01',cat:CATS[type][0],pay:pay||'카드'};
   openDlg(rec?'기록 고치기':(type==='지출'?(r.pay==='카드'?'카드로 쓴 돈':'현금지출'):type)+' 적기',`${!rec&&type!=='저축'?smsBox():''}
   <label class="f">종류${chips('type',['지출','수입','저축'],r.type)}</label>
   <label class="f">누가${chips('who',WHO,r.who)}</label>
@@ -751,7 +757,7 @@ function entryDlg(type,rec,pay){
   const a=document.getElementById('fAmt');a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''});setTimeout(()=>a.focus(),30);
   wireSms();
 }
-function billDlg(rec){const s=settings();const r=rec||{who:me(),card:'',day:(s.cardDay||{})[me()]||10,month:cur};
+function billDlg(rec){const s=settings();const r=rec||{who:takeWho(me()),card:'',day:(s.cardDay||{})[me()]||10,month:cur};
   openDlg(rec?'카드값 고치기':mLabel(cur)+' 카드값 적기',`<label class="f">누구 카드${chips('who',WHO,r.who)}</label>
   <label class="f">카드 이름<input type="text" id="fCard" value="${esc(r.card)}" placeholder="예) 신한 Deep"></label>
   <label class="f">청구 금액 (원)<input type="text" inputmode="numeric" id="fAmt" value="${r.amount?won(r.amount):''}"></label>
@@ -838,8 +844,8 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('button,[data-go]');if(!t)return;const ds=t.dataset;
   if(ds.v){view=ds.v;ls.set('jy.view',view);render()}
   else if(ds.mon){cur=addMonth(cur,Number(ds.mon));render()}
-  else if(ds.pickadd)addPicker();
-  else if(ds.add)entryDlg(ds.add);
+  else if(ds.pickadd){preWho=ds.who||null;addPicker()}
+  else if(ds.add){preWho=ds.who||null;entryDlg(ds.add)}
   else if(ds.edit){const r=Store.get(ds.edit);if(r)entryDlg(r.type,r)}
   else if(ds.del){const r=Store.get(ds.del);if(!r)return;if(t.dataset.sure){Store.del(ds.del);toast('지웠어요 · 설정 → 휴지통에서 되살릴 수 있어요')}else{t.dataset.sure=1;t.textContent='지울까요?';t.style.color='var(--red)';setTimeout(()=>{if(t.isConnected){delete t.dataset.sure;t.textContent='✕';t.style.color=''}},3000)}}
   else if(ds.bill)billDlg(ds.bill==='new'?null:Store.get(ds.bill));
