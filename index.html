@@ -356,7 +356,7 @@ function vHome(){
       <div class="card halfcard"><h3>모은 돈 <span class="r small" title="목표 ${won(s.goal)}원 ${esc(s.goalName||'')}">목표 ${Math.floor(goalPct)}% ${mini('고치기','data-go="save"')}</span></h3><div class="big" style="font-size:18px">${won(saved)}<span class="won">원</span></div>
         <div class="hp" style="height:8px"><span style="width:${goalPct}%"></span></div>${emerTotal()?`<div class="small">🛟 비상금 따로 ${won(emerTotal())}원</div>`:''}
         <hr class="half"><h3>${Number(cur.slice(5))}월 수입 ${whoBtns('data-add="수입"')}</h3>${(()=>{const iw=w=>d.es.filter(e=>e.type==='수입'&&e.who===w).reduce((a,e)=>a+Number(e.amount||0),0);const V=verdict(cur);
-          return `<div class="big" style="font-size:18px">${won(d.inc)}<span class="won">원</span></div><div class="small">${WHO.filter(w=>iw(w)).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(iw(w))}`).join(' ')||'아직 수입 기록이 없어요'}</div>${V.sal?`<div class="small" title="월급 − 총 지출, 목표 ${won(V.goal)}원">${V.face} 남긴 돈 <b style="color:${V.col}">${V.left>=0?'+':''}${won(V.left)}원</b> / ${Math.round(V.goal/1e4)}만</div>`:''}`})()}</div>
+          return `<div class="big" style="font-size:18px">${won(d.inc)}<span class="won">원</span></div><div class="small">${WHO.filter(w=>iw(w)).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(iw(w))}`).join(' ')||'아직 수입 기록이 없어요'}</div>${V.sal?`<div class="small" title="월급 − 총 지출, 목표 ${won(V.goal)}원">${V.face} 남긴 돈 <b style="color:${V.col}">${V.left>=0?'+':''}${won(V.left)}원</b> / ${Math.round(V.goal/1e4)}만</div>`:`<div class="small">남긴 돈 (목표 ${Math.round(V.goal/1e4)}만) · 월급을 적으면 보여요</div>`}`})()}</div>
       ${budgetCard(cur)}
     </div>
   </div></div>
