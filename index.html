@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.17';
+const VERSION='1.0.18';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -497,6 +497,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.18','10/27','새 버전이 폰에 바로 반영되게(옛날 화면 안 남게), 폰 우리집 버튼 고정'],
   ['1.0.17','10/27','뒤로가기: 다른 탭에서는 우리집으로, 우리집에서는 나가기'],
   ['1.0.16','10/27','모든 탭에 🏠 우리집 버튼(칸 아래 오른쪽), 맨 위 제목 눌러도 우리집으로'],
   ['1.0.15','10/27','수입·저축 적을 때 결제(카드·현금) 칸 안 보이게'],
@@ -1372,7 +1373,7 @@ render();Sync.start();
 if(ls.get('jy.joined',false)){ls.set('jy.joined',false);setTimeout(()=>toast('함께 쓰기 연결했어요!'),300)}
 if(!WIDGET&&!ls.get('jy.meSet',false)){ls.set('jy.meSet',true);setTimeout(meDlg,400)}
 // 앱 설치: 크롬이 설치할 수 있다고 알려 주면 위쪽에 '앱 설치' 버튼을 띄워요
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(g=>g.update()).catch(()=>{});
 {let ev=null;const ib=document.getElementById('instBtn');
   addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(!WIDGET)ib.hidden=false});
   ib.onclick=async()=>{if(!ev)return;ev.prompt();await ev.userChoice.catch(()=>{});ev=null;ib.hidden=true};
