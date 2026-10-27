@@ -168,6 +168,7 @@ html.widget .fab{display:none}
     <button class="tab" role="tab" data-v="card">카드값</button>
     <button class="tab" role="tab" data-v="spend">현금지출</button>
     <button class="tab" role="tab" data-v="fixed">고정지출</button>
+    <button class="tab" role="tab" data-v="loan">대출금</button>
     <button class="tab" role="tab" data-v="save">모은 돈</button>
     <button class="tab" role="tab" data-v="report">리포트</button>
     <button class="tab" role="tab" data-v="tax">세금</button>
@@ -183,7 +184,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.7';
+const VERSION='0.7.1';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -383,7 +384,7 @@ function render(){
   document.getElementById('meBtn').textContent='나: '+me()+' ▾';
   const keepWish=document.getElementById('wishTxt')?.value;
   if(WIDGET){main.innerHTML=vWidget();drawHome();return}
-  main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,save:vSave,report:vReport,tax:vTax,wish:vWish}[view]||vHome)();
+  main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,loan:vLoan,save:vSave,report:vReport,tax:vTax,wish:vWish}[view]||vHome)();
   if(keepWish&&document.getElementById('wishTxt'))document.getElementById('wishTxt').value=keepWish;
   if(view==='home')drawHome();
 }
@@ -397,9 +398,9 @@ const fixIsCard=f=>fixPay(f.pay)===FIX_PAY[0];
 function fixedFor(m){return Store.all('fixed').filter(f=>f.active!==false).map(f=>({f,paid:!!Store.get('fx_'+f.id+'_'+m),dd:ddayOf(m,f.day)})).sort((a,b)=>a.f.day-b.f.day)}
 function nextDue(m){const ds=[...monthData(m).bills.map(b=>ddayOf(m,b.day||10)),...fixedFor(m).filter(x=>!x.paid).map(x=>x.dd)].filter(x=>x>=0);return ds.length?Math.min(...ds):null}
 function ddTag(dd,paid){if(paid)return '<span class="st-badge done">냈어요</span>';if(dd<0)return '<span class="dday" style="background:var(--warn)">'+(-dd)+'일 지남</span>';return '<span class="dday">D-'+(dd||'DAY')+'</span>'}
-function upcomingCard(){if(cur!==ym(today()))return '';const up=fixedFor(cur).filter(x=>!x.paid&&x.dd<=7);const bl=monthData(cur).bills.map(b=>({b,dd:ddayOf(cur,b.day)})).filter(x=>x.dd>=0&&x.dd<=7);
-  if(!up.length&&!bl.length)return '';
-  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈</h3>${bl.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.b.who)} ${esc(x.b.card)} 카드값</span><span>${won(x.b.amount)}</span></div>`).join('')}${up.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.f.name)} <span class="cat">${esc(fixPay(x.f.pay).replace(' (카드값에 포함)',''))}</span></span><span>${won(x.f.amount)} <button type="button" class="x" data-paid="${x.f.id}" title="냈어요 표시">☐</button></span></div>`).join('')}</div>`}
+function upcomingCard(){if(cur!==ym(today()))return '';const up=fixedFor(cur).filter(x=>!x.paid&&x.dd<=7);const lu=loansFor(cur).filter(x=>!x.paid&&x.dd<=7);const bl=monthData(cur).bills.map(b=>({b,dd:ddayOf(cur,b.day)})).filter(x=>x.dd>=0&&x.dd<=7);
+  if(!up.length&&!bl.length&&!lu.length)return '';
+  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈</h3>${bl.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.b.who)} ${esc(x.b.card)} 카드값</span><span>${won(x.b.amount)}</span></div>`).join('')}${lu.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.l.name)} <span class="cat">대출</span></span><span>${won(x.l.monthly)}</span></div>`).join('')}${up.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.f.name)} <span class="cat">${esc(fixPay(x.f.pay).replace(' (카드값에 포함)',''))}</span></span><span>${won(x.f.amount)} <button type="button" class="x" data-paid="${x.f.id}" title="냈어요 표시">☐</button></span></div>`).join('')}</div>`}
 function vFixed(){const L=fixedFor(cur);const tot=L.reduce((a,x)=>a+Number(x.f.amount),0),left=L.filter(x=>!x.paid).reduce((a,x)=>a+Number(x.f.amount),0);
   return `<div class="view"><div class="toolbar">${monthNav()}<span style="margin-left:auto"></span><button type="button" class="btn" data-fixed="new">＋ 고정지출 추가</button></div>
   <div class="cols"><div class="card"><h3>${mLabel(cur)} 고정지출 <span class="r">합계 <b>${won(tot)}원</b> · 아직 안 낸 돈 <b style="color:var(--red)">${won(left)}원</b></span></h3>
@@ -416,6 +417,34 @@ function fixedDlg(rec){const r=rec||{name:'',who:'같이',amount:0,day:25,cat:'�
     if(!val('fName'))return '항목 이름을 적어 주세요.';const amt=numVal('fAmt');if(!amt)return '금액을 적어 주세요.';const day=numVal('fDay');if(!(day>=1&&day<=31))return '날짜는 1~31 사이로 적어 주세요.';
     Store.put({...(rec||{}),id:rec?.id||uid(),kind:'fixed',name:val('fName'),who:chipVal('who'),amount:amt,day,cat:chipVal('cat'),pay:chipVal('pay'),active:true});toast('저장했어요')});
   const a=document.getElementById('fAmt');a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''});}
+
+/* ---------- 대출금 ---------- */
+// 대출 {name, who, balance(남은 원금), rate(연 %), monthly(매달 갚는 돈), day}. 그 달 '냈어요' = loanpay 기록(이자·원금 나눠 저장)
+function loansFor(m){return Store.all('loan').map(l=>({l,paid:Store.get('lp_'+l.id+'_'+m),dd:ddayOf(m,l.day)})).sort((a,b)=>a.l.day-b.l.day)}
+function payoffMonths(B,rate,P){const r=Number(rate||0)/1200;if(!(P>0)||!(B>0))return 0;if(!r)return Math.ceil(B/P);if(P<=B*r)return Infinity;return Math.ceil(-Math.log(1-r*B/P)/Math.log(1+r))}
+function vLoan(){const L=loansFor(cur);const bal=L.reduce((a,x)=>a+Number(x.l.balance||0),0),mon=L.reduce((a,x)=>a+Number(x.l.monthly||0),0),left=L.filter(x=>!x.paid).reduce((a,x)=>a+Number(x.l.monthly||0),0);
+  const end=n=>{if(!n)return '다 갚음';if(n===Infinity)return '이자보다 적게 갚는 중';const d=new Date(Number(cur.slice(0,4)),Number(cur.slice(5))-1+n,1);return d.getFullYear()+'년 '+(d.getMonth()+1)+'월쯤 끝 ('+n+'개월)'};
+  return `<div class="view"><div class="toolbar">${monthNav()}<span style="margin-left:auto"></span><button type="button" class="btn" data-loan="new">＋ 대출 추가</button></div>
+  <div class="cols"><div class="card"><h3>남은 대출 합계</h3><div class="big" style="color:var(--red)">${won(bal)}<span class="won">원</span></div><div class="small">매달 갚는 돈 ${won(mon)}원 · ${mLabel(cur)} 아직 안 낸 돈 <b style="color:var(--red)">${won(left)}원</b></div></div>
+  <div class="card"><h3>어떻게 쓰나요</h3><div class="small">대출마다 지금 남은 원금, 연 이자율, 매달 갚는 돈, 갚는 날을 적어요. 갚은 달에 ☐를 누르면 그 달 이자를 빼고 나머지만큼 남은 원금이 줄어요(대충 계산). 은행 앱의 남은 원금과 다르면 ✎로 맞춰 주세요. 매달 갚는 돈은 우리집 화면 총 지출에 들어가요.</div></div></div>
+  <div class="card"><h3>${mLabel(cur)} 갚을 대출</h3>${L.length?`<div class="tblwrap"><table><tr><th>날짜</th><th>대출</th><th>누구</th><th class="m">남은 원금</th><th class="m">매달</th><th class="m">냈어요</th><th></th></tr>${L.map(x=>{const l=x.l,B=Number(l.balance||0),P=Number(l.monthly||0),n=payoffMonths(B,l.rate,P),pct=l.start?Math.max(0,Math.min(100,(1-B/Number(l.start))*100)):0;
+    return `<tr><td class="dcell"><span class="dnum">${l.day}일</span>${ddTag(x.dd,!!x.paid)}</td><td>${esc(l.name)} <span class="cat">연 ${Number(l.rate)||0}%</span>${l.start?`<div class="hp" style="height:8px;margin-top:3px"><span style="width:${pct}%"></span></div><span class="small">${Math.floor(pct)}% 갚음 · ${end(n)}</span>`:`<div class="small">${end(n)}</div>`}${x.paid?`<div class="small">이번 달 이자 ${won(x.paid.interest)} · 원금 ${won(x.paid.principal)}</div>`:''}</td><td><span class="who ${whoCls(l.who)}">${esc(l.who)}</span></td><td class="m">${won(B)}</td><td class="m">${won(P)}</td><td class="m"><button type="button" class="btn ${x.paid?'alt':'ghost'}" style="padding:1px 8px;font-size:12px;box-shadow:2px 2px 0 var(--line)" data-lpaid="${l.id}">${x.paid?'☑ 냈어요':'☐'}</button></td><td class="m"><button type="button" class="x" data-loan="${l.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${l.id}" aria-label="지우기">✕</button></td></tr>`}).join('')}</table></div>`:'<div class="empty">갚고 있는 대출이 있으면 ＋ 대출 추가를 눌러 적어 주세요.</div>'}</div></div>`}
+function toggleLoanPaid(lid){const l=Store.get(lid);if(!l)return;const id='lp_'+lid+'_'+cur;const old=Store.get(id);
+  if(old){Store.put({...l,balance:Number(l.balance||0)+Number(old.principal||0)});Store.del(id);toast('냈어요 표시를 뺐어요');return}
+  const B=Number(l.balance||0),interest=Math.round(B*Number(l.rate||0)/1200),principal=Math.max(0,Math.min(B,Number(l.monthly||0)-interest));
+  const day=Math.min(l.day,new Date(...cur.split('-').map(Number),0).getDate());
+  Store.put({id,kind:'loanpay',loan:lid,who:l.who,amount:Number(l.monthly||0),interest,principal,date:cur+'-'+pad(day)});Store.put({...l,balance:B-principal});toast('냈어요! 남은 원금이 '+won(principal)+'원 줄었어요')}
+function loanDlg(rec){const r=rec||{name:'',who:'같이',balance:0,rate:'',monthly:0,day:25};
+  openDlg(rec?'대출 고치기':'대출 추가',`<label class="f">대출 이름<input type="text" id="fName" value="${esc(r.name)}" placeholder="예) 전세자금대출, 신용대출"></label>
+  <label class="f">누구${chips('who',WHO,r.who)}</label>
+  <label class="f">지금 남은 원금 (원)<input type="text" inputmode="numeric" id="fBal" value="${r.balance?won(r.balance):''}"></label>
+  <label class="f">처음 빌린 돈 (원, 선택) · 넣으면 몇 % 갚았는지 보여요<input type="text" inputmode="numeric" id="fStart" value="${r.start?won(r.start):''}"></label>
+  <label class="f">연 이자율 (%)<input type="number" step="0.01" min="0" id="fRate" value="${r.rate??''}" placeholder="예) 4.2"></label>
+  <label class="f">매달 갚는 돈 (원)<input type="text" inputmode="numeric" id="fMon" value="${r.monthly?won(r.monthly):''}"></label>
+  <label class="f">매달 갚는 날 (일)<input type="number" min="1" max="31" id="fDay" value="${r.day}"></label>`,'저장',()=>{
+    if(!val('fName'))return '대출 이름을 적어 주세요.';const b=numVal('fBal');if(!(b>=0))return '남은 원금을 적어 주세요.';const m=numVal('fMon');if(!m)return '매달 갚는 돈을 적어 주세요.';const day=numVal('fDay');if(!(day>=1&&day<=31))return '날짜는 1~31 사이로 적어 주세요.';
+    Store.put({...(rec||{}),id:rec?.id||uid(),kind:'loan',name:val('fName'),who:chipVal('who'),balance:b,start:numVal('fStart')||'',rate:Number(val('fRate'))||0,monthly:m,day});toast('저장했어요')});
+  ['fBal','fStart','fMon'].forEach(id=>{const a=document.getElementById(id);a.addEventListener('input',()=>{const n=a.value.replace(/[^0-9]/g,'');a.value=n?Number(n).toLocaleString('ko-KR'):''})})}
 
 /* ---------- 세금 (추정) ----------
    종합소득세 기본세율: 2023년 귀속부터 같은 표. 2026-10-26 확인(블로그 여러 곳 일치, 국세청 원문 페이지는 직접 못 읽음 → 추정 표시)
@@ -641,11 +670,12 @@ function catsDlg(){applyCats();
     Store.put(o);toast('분류를 바꿨어요')});
   document.getElementById('catReset').onclick=()=>document.querySelectorAll('[data-cat]').forEach(el=>el.value=CATS0[el.dataset.cat].join(', '))}
 // 지운 기록은 del:true로 남아 있어서 되살릴 수 있어요
-const TRASH_KINDS={entry:'기록',bill:'카드값',fixed:'고정지출',account:'통장',wish:'건의'};
+const TRASH_KINDS={entry:'기록',bill:'카드값',fixed:'고정지출',loan:'대출',account:'통장',wish:'건의'};
 function trashLabel(r){const w=r.who?`<span class="who ${whoCls(r.who)}">${esc(r.who)}</span>`:'';
   if(r.kind==='entry')return `${esc(r.date||'')} ${w}${esc(r.type||'')} · ${esc(r.memo||r.cat||'')} <b>${won(r.amount)}원</b>`;
   if(r.kind==='bill')return `${esc(r.month||'')} ${w}${esc(r.card||'')} 카드값 <b>${won(r.amount)}원</b>`;
   if(r.kind==='fixed')return `매달 ${r.day}일 ${w}${esc(r.name||'')} <b>${won(r.amount)}원</b>`;
+  if(r.kind==='loan')return `${w}${esc(r.name||'')} 대출 · 남은 원금 <b>${won(r.balance)}원</b>`;
   if(r.kind==='account')return `${w}${esc(r.name||'')} 통장 <b>${won(r.balance)}원</b>`;
   return `${w}${esc((r.text||'').slice(0,40))}`}
 function trashDlg(){const list=Object.values(Store.recs).filter(r=>r.del&&TRASH_KINDS[r.kind]).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,200);
@@ -705,6 +735,8 @@ document.addEventListener('click',e=>{
   else if(ds.goal)goalDlg();
   else if(ds.fixed)fixedDlg(ds.fixed==='new'?null:Store.get(ds.fixed));
   else if(ds.paid)togglePaid(ds.paid);
+  else if(ds.loan)loanDlg(ds.loan==='new'?null:Store.get(ds.loan));
+  else if(ds.lpaid)toggleLoanPaid(ds.lpaid);
   else if(ds.taxcfg)taxDlg(ds.taxcfg);
   else if(ds.who){spendWho=ds.who;render()}
   else if(ds.go){view=ds.go;ls.set('jy.view',view);render()}
@@ -1025,7 +1057,8 @@ function drawHome(){
   // 총 지출 = 현금지출(카드 결제·고정지출 '냈어요' 기록은 빼고) + 그 달 카드값 + 카드 아닌 고정지출
   {const cash=d.es.filter(e=>e.type==='지출'&&e.pay!=='카드'&&!e.fixedRef).reduce((a,e)=>a+Number(e.amount||0),0);
    const fixed=fixedFor(cur).filter(x=>!fixIsCard(x.f)).reduce((a,x)=>a+Number(x.f.amount||0),0); // 카드로 내는 고정지출은 카드값에 이미 들어 있어요
-   tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(cash+d.bill+fixed)+'</b>','tag',0,'spend').title='현금지출 '+won(cash)+' + 카드값 '+won(d.bill)+' + 고정지출(카드 결제 제외) '+won(fixed)}
+   const loan=loansFor(cur).reduce((a,x)=>a+Number(x.l.monthly||0),0);
+   tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(cash+d.bill+fixed+loan)+'</b>','tag',0,'spend').title='현금지출 '+won(cash)+' + 카드값 '+won(d.bill)+' + 고정지출(카드 결제 제외) '+won(fixed)+(loan?' + 대출 '+won(loan):'')}
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const fx=fixedFor(cur),left=fx.filter(x=>!x.paid).length;if(fx.length)tag(P(3.2,0,6.6),'고정지출 <b>'+man(fx.reduce((a,x)=>a+Number(x.f.amount||0),0))+'</b>'+(left?' · '+left+'건 남음':' · 다 냄'),'tag',0,'fixed')}
   for(const w of['주니','영이']){const c=Anim.c[w],p=P(c.x,c.y);
