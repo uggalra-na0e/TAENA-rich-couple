@@ -199,6 +199,7 @@ html.widget .fab{display:none}
     <canvas class="coin" id="ico" width="9" height="9"></canvas>
     <b>주니와 영이 부자되자</b>
     <span class="sp"></span>
+    <button class="iconbtn" id="instBtn" hidden title="폰·PC에 앱으로 설치">📲 앱 설치</button>
     <button class="iconbtn" id="meBtn" title="지금 쓰는 사람"></button>
     <button class="iconbtn" id="setBtn">설정</button>
   </div>
@@ -222,7 +223,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.6';
+const VERSION='1.0.8';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -340,6 +341,9 @@ function monthNav(){return `<span class="month"><button type="button" data-mon="
 function entryRows(list,del=true){
   if(!list.length)return '<div class="empty">아직 기록이 없어요. 아래 버튼으로 첫 기록을 적어 보세요.</div>';
   return `<div class="tblwrap"><table>${list.map(e=>`<tr><td>${e.date.slice(5).replace('-','/')}</td><td><span class="who ${whoCls(e.who)}">${esc(e.who)}</span>${esc(e.memo||e.cat)} <span class="cat">${esc(e.cat)}${e.pay==='카드'?' · 카드':''}</span></td><td class="m ${e.type!=='지출'?'plus':''}">${e.type==='지출'?'−':'+'}${won(e.amount)}</td>${del?`<td class="m"><button type="button" class="x" data-edit="${e.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${e.id}" aria-label="지우기">✕</button></td>`:''}</tr>`).join('')}</table></div>`}
+// 이 달 전체 기록 (지출·수입·저축 다 같이)
+function allDlg(f){const es=monthData(cur).es,L=sortDesc(es.filter(e=>f==='전체'||(f==='카드'?e.type==='지출'&&e.pay==='카드':f==='현금'?e.type==='지출'&&e.pay!=='카드':e.type===f)));
+  openDlg(mLabel(cur)+' 전체 기록 '+es.length+'건',`<div class="seg" style="margin-bottom:6px">${['전체','현금','카드','수입','저축'].map(k=>`<button type="button" data-allf="${k}" aria-pressed="${k===f}">${k==='현금'?'현금지출':k==='카드'?'카드':k}</button>`).join('')}</div>${entryRows(L)}<div class="small" style="margin-top:6px">고정지출 '냈어요'로 적힌 기록도 여기 보여요. 총 지출 계산은 방 그림 총 지출을 눌러서 보세요.</div>`,'닫기',()=>{})}
 function sortDesc(a){return a.sort((x,y)=>(y.date+y.t).localeCompare(x.date+x.t))}
 
 function vHome(){
@@ -349,7 +353,7 @@ function vHome(){
   return `<div class="view"><div class="cols homecols">
   <div class="leftcol"><div class="room" id="room"><canvas id="cv"></canvas>${monthNav()}</div>
   <div class="card recent"><h3>최근 기록 <span class="r small" title="사람별 총 지출">${(B=>WHO.filter(w=>B[w]).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(B[w])}`).join(' '))(spendSum(cur).by.total)}</span></h3><div class="rbox"><div class="rin">${entryRows(sortDesc(d.es).slice(0,30))}</div></div>
-    <div class="add"><button type="button" class="btn addbig" data-pickadd="1">＋ 적기 (지출·카드값·고정지출·수입…)</button><button type="button" class="btn ghost" data-go="spend">전체 기록 보기</button><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div></div>
+    <div class="add"><button type="button" class="btn addbig" data-pickadd="1">＋ 적기 (지출·카드값·고정지출·수입…)</button><button type="button" class="btn ghost" data-go="all">전체 기록 보기</button><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div></div>
   <div class="side">
     ${(()=>{const T=spendSum(cur);
       return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${whoBtns('data-pickadd="1"')}${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span>${(()=>{const pm=addMonth(cur,-1),P=spendSum(pm);return `<span class="small cardnote" title="${mLabel(pm)} 총 지출 ${won(P.total)}원 (현금 ${won(P.cash)} · 카드값 ${won(P.bill)} · 고정 ${won(P.fixed)} · 대출 ${won(P.loan)})">${Number(pm.slice(5))}월 총 지출 ${man(P.total)} · 카드값 ${man(P.bill)}</span>`})()}</div>
@@ -483,6 +487,8 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.8','10/27','폰 앱 설치 지원: 크롬에서 열면 위쪽에 📲 앱 설치 버튼'],
+  ['1.0.7','10/27','전체 기록 보기 → 이 달 모든 기록(현금·카드·수입·저축 골라 보기)'],
   ['1.0.6','10/27','연동 점검: 리포트·돌아보기·위젯·말풍선 지출도 총 지출과 같은 숫자로, 분류별 지출 합계 = 총 지출, 카드값 탭 큰 숫자 = 방 그림 카드값, 고정지출·대출은 등록한 달부터 셈(언제부터 칸)'],
   ['1.0.5','10/27','방 그림 왼쪽 아래에 이번 달 수입(월급·부수입) 칸, ＋로 바로 적기'],
   ['1.0.4','10/27','현금지출 탭엔 현금만, 카드값 탭엔 그 달에 카드로 쓴 기록 + 청구서 맞춰 보기 + 카드로 나가는 고정지출도 함께 표시(총 지출엔 한 번만), 방 그림 총 지출을 누르면 내역 표'],
@@ -956,6 +962,7 @@ document.addEventListener('click',e=>{
   else if(ds.lpaid)toggleLoanPaid(ds.lpaid);
   else if(ds.taxcfg)taxDlg(ds.taxcfg);
   else if(ds.who){spendWho=ds.who;render()}
+  else if(ds.go==='all'||ds.allf)allDlg(ds.allf||'전체');
   else if(ds.go==='total')openDlg(mLabel(cur)+' 총 지출 '+won(spendSum(cur).total)+'원',sumTable(cur,true)+'<div class="small" style="margin-top:6px">이름을 누르면 그 탭으로 가요. 카드값은 그 달에 카드로 쓴 돈이에요.</div>','닫기',()=>{});
   else if(ds.go){if(dlg.open)dlg.close();view=ds.go;ls.set('jy.view',view);render();if(ds.go!=='home')scrollTo(0,0)}
   else if(ds.wish){const txt=document.getElementById('wishTxt').value.trim();if(!txt){toast('내용을 적어 주세요');return}Store.put({id:uid(),kind:'wish',who:me(),text:txt,status:'new',created:Date.now(),ver:VERSION});document.getElementById('wishTxt').value='';toast('보냈어요. 다음 버전에 반영할게요')}
@@ -1168,7 +1175,7 @@ function lookDlg(w){const L=look(w);
 /* ---------- 데스크톱 위젯 (주소 끝에 #widget) ---------- */
 function vWidget(){cur=ym(today());const d=monthData(cur),s=settings(),saved=savedTotal(),nd=nextDue(cur);
   return `<div class="wv"><div class="room" id="room"><canvas id="cv"></canvas></div>
-  <div class="wnums"><button type="button" data-open="spend"><span>이번 달 쓴 돈</span><b>${man(spendSum(cur).total)}</b></button><button type="button" data-open="card"><span>나갈 돈</span><b>${nd!=null?'D-'+(nd||'DAY'):man(d.bill)}</b></button><button type="button" data-open="save"><span>모은 돈</span><b>${s.goal?Math.round(saved/s.goal*100)+'%':man(saved)}</b></button></div></div>`}
+  <div class="wnums"><button type="button" data-open="home"><span>이번 달 쓴 돈</span><b>${man(spendSum(cur).total)}</b></button><button type="button" data-open="card"><span>나갈 돈</span><b>${nd!=null?'D-'+(nd||'DAY'):man(d.bill)}</b></button><button type="button" data-open="save"><span>모은 돈</span><b>${s.goal?Math.round(saved/s.goal*100)+'%':man(saved)}</b></button></div></div>`}
 
 /* ---------- 시작 ---------- */
 (function(){const ic=document.getElementById('ico').getContext('2d');["001111100","011111110","111101111","111101111","111101111","111101111","111101111","011111110","001111100"].forEach((r,i)=>[...r].forEach((v,j)=>{if(v==='1'){ic.fillStyle='#f6c445';ic.fillRect(j,i,1,1)}}))})();
@@ -1180,4 +1187,10 @@ setInterval(()=>{if(WIDGET&&cur!==ym(today()))render()},60000);
 render();Sync.start();
 if(ls.get('jy.joined',false)){ls.set('jy.joined',false);setTimeout(()=>toast('함께 쓰기 연결했어요!'),300)}
 if(!WIDGET&&!ls.get('jy.meSet',false)){ls.set('jy.meSet',true);setTimeout(meDlg,400)}
+// 앱 설치: 크롬이 설치할 수 있다고 알려 주면 위쪽에 '앱 설치' 버튼을 띄워요
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+{let ev=null;const ib=document.getElementById('instBtn');
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(!WIDGET)ib.hidden=false});
+  ib.onclick=async()=>{if(!ev)return;ev.prompt();await ev.userChoice.catch(()=>{});ev=null;ib.hidden=true};
+  addEventListener('appinstalled',()=>{ib.hidden=true;toast('앱으로 설치했어요! 홈 화면에서 열어 보세요')})}
 </script>
