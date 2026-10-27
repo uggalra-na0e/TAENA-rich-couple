@@ -119,7 +119,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.tb{margin:4px 0}.keeptag{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fffaf0;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:3px 6px;font:inherit;font-size:10px;line-height:1.2;cursor:pointer;text-align:left;min-width:96px}.keeptag i{display:block;height:5px;border:1px solid var(--line);background:#fff}.keeptag s{display:block;height:100%}.inctag{right:auto;left:6px;cursor:default;gap:1px}.inctag button{font:inherit;border:0;background:none;padding:0;cursor:pointer;color:inherit;text-align:left}.inctag .ir{display:flex;align-items:center;gap:3px}.inctag .ir b{margin-left:auto}.inctag .ip{width:13px;height:13px;line-height:11px;text-align:center;border:1px solid var(--line);background:#ffe08a;font-weight:700}
+.tb{margin:4px 0}.sumtbl td,.sumtbl th,.side .tblwrap td{white-space:nowrap}.big{white-space:nowrap;overflow:hidden}.keeptag{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fffaf0;border:2px solid var(--line);box-shadow:2px 2px 0 var(--line);padding:3px 6px;font:inherit;font-size:10px;line-height:1.2;cursor:pointer;text-align:left;min-width:96px}.keeptag i{display:block;height:5px;border:1px solid var(--line);background:#fff}.keeptag s{display:block;height:100%}.inctag{right:auto;left:6px;cursor:default;gap:1px}.inctag button{font:inherit;border:0;background:none;padding:0;cursor:pointer;color:inherit;text-align:left}.inctag .ir{display:flex;align-items:center;gap:3px}.inctag .ir b{margin-left:auto}.inctag .ip{width:13px;height:13px;line-height:11px;text-align:center;border:1px solid var(--line);background:#ffe08a;font-weight:700}
 .recent>h3{height:18px;overflow:visible}.recent>h3 .who{line-height:1.2}
 button.lnk{all:unset;cursor:pointer;text-decoration:underline dotted}
 .cardnote{font-size:10.5px;font-weight:400;margin-left:8px;letter-spacing:0;white-space:nowrap;line-height:1;vertical-align:middle;display:inline-block}
@@ -223,7 +223,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.9';
+const VERSION='1.0.10';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -487,6 +487,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.10','10/27','숫자가 아주 커져도 칸이 안 넓어지게 글자 크기 자동 줄이기'],
   ['1.0.9','10/27','총 지출 표 이름 짧게: 현금·카드·고정·대출·총액'],
   ['1.0.8','10/27','폰 앱 설치 지원: 크롬에서 열면 위쪽에 📲 앱 설치 버튼'],
   ['1.0.7','10/27','전체 기록 보기 → 이 달 모든 기록(현금·카드·수입·저축 골라 보기)'],
@@ -565,6 +566,11 @@ function vWish(){
   <div class="card"><h3>업데이트 기록 <span class="r small">지금 버전 ${VERSION}</span></h3><div class="tblwrap" style="max-height:220px;overflow:auto"><table>${CHANGES.map(([v,d,t])=>`<tr><td style="white-space:nowrap"><b>v${v}</b> <span class="small">${d}</span></td><td class="small">${esc(t)}</td></tr>`).join('')}</table></div><div class="small" style="margin-top:4px">예전 버전으로 되돌리고 싶으면 Claude에게 "v0.6.9로 돌려줘"처럼 말해 주세요. 돈 기록은 그대로 남아요.</div></div>
   <div class="card"><h3>보낸 건의 <span class="r small">프로그램 버전 ${VERSION}</span></h3>${ws.length?ws.map(w=>`<div class="wish"><div><span class="who ${whoCls(w.who)}">${esc(w.who)}</span><span class="small">${new Date(w.created||w.t).toLocaleDateString('ko-KR')}</span><span class="st-badge ${w.status||'new'}">${S[w.status||'new']}</span></div><div>${esc(w.text)}</div>${w.reply?`<div class="small">↳ ${esc(w.reply)}</div>`:''}</div>`).join(''):'<div class="empty">아직 보낸 건의가 없어요.</div>'}</div></div></div>`}
 
+// 숫자가 아주 커져도 칸이 넓어지지 않게: 넘치면 글자를 줄여서 맞춰요 (최소 7px)
+function fitWide(root){for(const el of (root||document).querySelectorAll('.sumtbl,.side .tblwrap>table,.big,.halfcard .small')){el.style.fontSize='';if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';
+  const box=el.tagName==='TABLE'?el.parentElement:el;let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
+  while(box.scrollWidth>box.clientWidth+1&&fs>7&&n++<30){fs-=.5;el.style.setProperty('font-size',fs+'px','important');if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.setProperty('font-size',fs+'px','important')}}}
+addEventListener('resize',()=>{clearTimeout(fitWide.t);fitWide.t=setTimeout(()=>fitWide(),150)});
 function render(){
   applyCats();
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.v===view));
@@ -574,6 +580,7 @@ function render(){
   main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,loan:vFixed,inc:vIncome,save:vSave,report:vReport,tax:vTax,wish:vWish}[view]||vHome)();
   if(keepWish&&document.getElementById('wishTxt'))document.getElementById('wishTxt').value=keepWish;
   if(view==='home')drawHome();
+  fitWide(main);
 }
 
 
@@ -741,7 +748,7 @@ function taxDlg(w){const cf=taxCfg();
 /* ---------- 입력 창 ---------- */
 const dlg=document.getElementById('dlg');let onOk=null;
 function openDlg(title,body,okLabel,ok){document.getElementById('dtitle').textContent=title;document.getElementById('dbody').innerHTML=body+'<div class="err" id="derr"></div>';
-  document.getElementById('dfoot').innerHTML=`<button class="btn ghost" value="cancel">취소</button><button class="btn" value="ok" id="dok">${okLabel}</button>`;onOk=ok;dlg.showModal()}
+  document.getElementById('dfoot').innerHTML=`<button class="btn ghost" value="cancel">취소</button><button class="btn" value="ok" id="dok">${okLabel}</button>`;onOk=ok;dlg.showModal();fitWide(dlg)}
 document.getElementById('dform').addEventListener('submit',e=>{const v=e.submitter&&e.submitter.value;if(v==='ok'){const msg=onOk();if(msg){e.preventDefault();document.getElementById('derr').textContent=msg}}});
 const val=id=>document.getElementById(id).value.trim();
 const numVal=id=>Number(val(id).replace(/[^0-9.-]/g,''));
