@@ -115,7 +115,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.bud{margin:6px 0}
+.bud{margin:6px 0}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -185,7 +185,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.8';
+const VERSION='0.8.1';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -302,31 +302,34 @@ function vHome(){
   return `<div class="view"><div class="cols">
   <div class="room" id="room"><canvas id="cv"></canvas>${monthNav()}</div>
   <div class="side">
-    <div class="grid2">
-      <div class="card"><h3>${Number(cur.slice(5))}월에 쓴 돈</h3><div class="big">${won(d.spend)}<span class="won">원</span></div>
-        <div class="small"><span class="who j">주니</span>${won(d.byWho['주니'])}</div><div class="small"><span class="who y">영이</span>${won(d.byWho['영이'])}</div>${d.byWho['같이']?`<div class="small"><span class="who t">같이</span>${won(d.byWho['같이'])}</div>`:''}</div>
-      <div class="card"><h3>${Number(cur.slice(5))}월 카드값 ${billNear!=null&&billNear>=0?`<span class="dday">D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(d.bill)}<span class="won">원</span></div>
-        ${d.bills.length?d.bills.map(b=>`<div class="small">${esc(b.who)} ${esc(b.card)} ${won(b.amount)} · ${b.day}일</div>`).join(''):'<div class="small">카드값 탭에서 이번 달 청구 금액을 적어 주세요.</div>'}</div>
-    </div>
+    ${(()=>{const T=spendSum(cur);const row=(l,v,sub)=>`<div class="row"><span>${l}${sub?` <span class="small">${sub}</span>`:''}</span><b>${won(v)}</b></div>`;
+      return `<div class="card"><h3>${Number(cur.slice(5))}월 총 지출 ${billNear!=null&&billNear>=0?`<span class="dday">카드값 D-${billNear||'DAY'}</span>`:''}</h3><div class="big">${won(T.total)}<span class="won">원</span></div>
+      <div class="sumrows">${row('💵 현금지출',T.cash,'현금·이체로 쓴 것')}${row('💳 카드값',d.bill,d.bills.length?d.bills.map(b=>esc(b.who)+' '+esc(b.card)).join(', '):'아직 안 적음')}${row('🔁 고정지출',T.fixed,'카드값에 든 건 빼고')}${T.loan?row('🏦 대출',T.loan,''):''}</div>
+      ${d.bills.length?'':'<div class="small">카드값 탭에서 이번 달 청구 금액을 적어 주세요.</div>'}${diff==null?'':`<div class="small">지난달 기록보다 ${diff>0?'+':''}${diff}%</div>`}</div>`})()}
     ${upcomingCard()}
     ${cur===ym(today())&&new Date().getDate()<=7?reviewCard(addMonth(cur,-1),'지난달('+Number(addMonth(cur,-1).slice(5))+'월) 돌아보기'):''}
-    ${(()=>{const R=budgetRows(cur).filter(x=>x.s>=x.b*.8);return R.length?`<div class="card"><h3>💸 예산 알림</h3>${R.map(x=>`<div class="row"><span>${esc(x.c)} ${x.s>x.b?'<b style="color:var(--red)">넘음</b>':'<b style="color:var(--warn)">80% 넘게 씀</b>'}</span><span class="small">${won(x.s)} / ${won(x.b)}</span></div>`).join('')}</div>`:''})()}
-    <div class="card"><h3>모은 돈 · 목표 ${man(s.goal)} 원 <span class="small">${esc(s.goalName||'')}</span></h3>
-      <div class="row"><span class="big">${won(saved)}<span class="won">원</span></span><span style="align-self:end;font-weight:700">${Math.floor(goalPct)}%</span></div>
-      <div class="hp"><span style="width:${goalPct}%"></span></div>
-      <div class="small">${d.sav?`이번 달 저축 +${won(d.sav)}원`:'이번 달 저축 기록이 아직 없어요'}${etaText(s.goal-saved)}</div>${emerTotal()?`<div class="small">🛟 비상금은 따로 ${won(emerTotal())}원</div>`:''}</div>
-    <div class="card"><h3>우리 재정 상태</h3>
+    ${budgetCard(cur)}
+    <div class="grid2">
+      <div class="card"><h3>모은 돈 <span class="r small">${Math.floor(goalPct)}%</span></h3><div class="big" style="font-size:20px">${won(saved)}<span class="won">원</span></div>
+        <div class="hp"><span style="width:${goalPct}%"></span></div>
+        <div class="small">목표 ${man(s.goal)} ${esc(s.goalName||'')}${etaText(s.goal-saved)}</div>${emerTotal()?`<div class="small">🛟 비상금 따로 ${won(emerTotal())}원</div>`:''}</div>
+      <div class="card"><h3>우리 재정 상태</h3>
       ${rate==null?'<div class="small">이번 달 수입을 적으면 저축률과 레벨이 나와요.</div>':`<div class="lvl"><span class="badge">Lv.${L.lv}</span><div><b>${L.name}</b><div class="small">수입 ${won(d.inc)} − 지출 ${won(d.spend)} = <b style="color:${d.inc-d.spend>=0?'var(--good)':'var(--red)'}">${d.inc-d.spend>=0?'+':''}${won(d.inc-d.spend)}</b></div></div></div>
       <div class="hp ${rate<0?'r':'g'}"><span style="width:${Math.max(3,Math.min(100,Math.abs(rate)*100))}%"></span></div>`}
-      <div class="row small"><span>${rate==null?'':'남기는 비율 '+Math.round(rate*100)+'%'}</span><span>${diff==null?'':'지난달보다 지출 '+(diff>0?'+':'')+diff+'%'}</span></div></div>
+      <div class="row small"><span>${rate==null?'':'남기는 비율 '+Math.round(rate*100)+'%'}</span></div></div>
+    </div>
   </div></div>
-  <div class="cols">
-    <div class="card"><h3>최근 기록</h3>${entryRows(sortDesc(d.es).slice(0,6))}
-      <div class="add"><button type="button" class="btn" data-add="지출">＋ 지출 적기</button><button type="button" class="btn alt" data-add="수입">＋ 수입 적기</button><button type="button" class="btn alt" data-add="저축">＋ 저축 적기</button></div></div>
-    <div class="card"><h3>누가 어디에 썼나 <span class="r small"><span class="who j">주니</span>◀ ▶<span class="who y" style="margin:0 0 0 4px">영이</span></span></h3>${catBars(d.es)}
-      <div class="add"><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div>
+  <div class="card"><h3>최근 기록 <span class="r small">${WHO.filter(w=>d.byWho[w]).map(w=>`<span class="who ${whoCls(w)}">${w}</span>${won(d.byWho[w])}`).join(' ')}</span></h3>${entryRows(sortDesc(d.es).slice(0,8))}
+    <div class="add"><button type="button" class="btn" data-add="지출">＋ 지출 적기</button><button type="button" class="btn alt" data-add="수입">＋ 수입 적기</button><button type="button" class="btn alt" data-add="저축">＋ 저축 적기</button><button type="button" class="btn ghost" data-go="spend">전체 기록 보기</button><button type="button" class="btn ghost" data-go="wish">💌 이런 기능 있었으면</button></div></div>
   </div></div>`;
 }
+// 총 지출 = 현금지출 + 카드값 + 고정지출(카드값에 든 것 빼고) + 대출. 규칙은 가계부_계산규칙.md
+function spendSum(m){const d=monthData(m);
+  const cash=d.es.filter(e=>e.type==='지출'&&e.pay!=='카드'&&!e.fixedRef).reduce((a,e)=>a+Number(e.amount||0),0);
+  const billWho=new Set(d.bills.filter(b=>Number(b.amount)>0).map(b=>b.who));
+  const fixed=fixedFor(m).filter(x=>!fixIsCard(x.f)||!billWho.has(x.f.who)).reduce((a,x)=>a+Number(x.f.amount||0),0);
+  const loan=loansFor(m).reduce((a,x)=>a+Number(x.l.monthly||0),0);
+  return{cash,bill:d.bill,fixed,loan,total:cash+d.bill+fixed+loan}}
 function etaText(left){if(left<=0)return ' · 목표 달성! 🎉';const ms=[];for(let k=0;k<3;k++){const m=addMonth(cur,-k);const x=monthData(m);ms.push(x.sav)}const avg=ms.reduce((a,b)=>a+b,0)/3;if(avg<=0)return '';const n=Math.ceil(left/avg);const end=addMonth(cur,n);return ` · 지금 속도면 ${mLabel(end)}에 목표 도착`}
 function catBars(es){
   const sp=es.filter(e=>e.type==='지출');if(!sp.length)return '<div class="empty">이번 달 지출이 아직 없어요.</div>';
@@ -375,6 +378,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8.1','10/27','우리집 화면 정리: 쓴 돈+카드값 → 총 지출 한 칸, 예산 크게, 모은 돈 작게, 누가 쓴 돈은 최근 기록에'],
   ['0.8','10/27','분류별 한 달 예산(넘으면 빨간불), 달마다 돌아보기(매달 1~7일엔 우리집에 지난달 요약), 영수증 사진으로 채우기(베타)'],
   ['0.7.3','10/27','건의함에 업데이트 기록 추가'],
   ['0.7.2','10/27','총 지출: 카드값을 아직 안 적었으면 카드 고정지출도 포함'],
@@ -968,13 +972,7 @@ function drawHome(){
   const tint=document.createElement('div');tint.id='nightTint';tint.className='nighttint';tint.hidden=!night();room.appendChild(tint);
   tag(P(8.9,5.9,0),'모은 돈 <b>'+man(saved)+'</b>','tag',-17,'save');
   tag(P(0,8.1,5.7),Number(cur.slice(5))+'월 카드값 <b>'+man(d.bill)+'</b>','tag',0,'card');
-  // 총 지출 = 현금지출(카드 결제·고정지출 '냈어요' 기록은 빼고) + 그 달 카드값 + 카드 아닌 고정지출
-  {const cash=d.es.filter(e=>e.type==='지출'&&e.pay!=='카드'&&!e.fixedRef).reduce((a,e)=>a+Number(e.amount||0),0);
-   // 카드로 내는 고정지출은 카드값에 들어 있어요. 단, 그 사람 카드값을 아직 안 적었으면 고정지출로 세요
-   const billWho=new Set(d.bills.filter(b=>Number(b.amount)>0).map(b=>b.who));
-   const fixed=fixedFor(cur).filter(x=>!fixIsCard(x.f)||!billWho.has(x.f.who)).reduce((a,x)=>a+Number(x.f.amount||0),0);
-   const loan=loansFor(cur).reduce((a,x)=>a+Number(x.l.monthly||0),0);
-   tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(cash+d.bill+fixed+loan)+'</b>','tag',0,'spend').title='현금지출 '+won(cash)+' + 카드값 '+won(d.bill)+' + 고정지출 '+won(fixed)+(loan?' + 대출 '+won(loan):'')}
+  {const T=spendSum(cur);tag(P(2.6,9.6,1.6),'총 지출 <b>'+man(T.total)+'</b>','tag',0,'spend').title='현금지출 '+won(T.cash)+' + 카드값 '+won(T.bill)+' + 고정지출 '+won(T.fixed)+(T.loan?' + 대출 '+won(T.loan):'')}
   tag(P(9.3,.8,2.3),'비상금 <b>'+man(emer)+'</b>','tag',0,'save');
   {const fx=fixedFor(cur),left=fx.filter(x=>!x.paid).length;if(fx.length)tag(P(3.2,0,6.6),'고정지출 <b>'+man(fx.reduce((a,x)=>a+Number(x.f.amount||0),0))+'</b>'+(left?' · '+left+'건 남음':' · 다 냄'),'tag',0,'fixed')}
   for(const w of['주니','영이']){const c=Anim.c[w],p=P(c.x,c.y);
