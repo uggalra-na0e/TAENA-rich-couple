@@ -115,6 +115,7 @@ dialog::backdrop{background:rgba(58,42,46,.35)}
 .dh{background:var(--plum);color:var(--paper);font-weight:700;padding:6px 10px;border-bottom:3px solid var(--line);display:flex}
 .dh .x{color:var(--paper);margin-left:auto}
 .db{padding:12px;display:grid;gap:10px}
+[hidden]{display:none!important}
 label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:700}
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
@@ -232,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.14';
+const VERSION='1.0.15';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -496,6 +497,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.15','10/27','수입·저축 적을 때 결제(카드·현금) 칸 안 보이게'],
   ['1.0.14','10/27','전체 기록 창 고르기 버튼 다섯 칸 같은 크기로'],
   ['1.0.13','10/27','카드값 탭: 카드로 나가는 고정지출 합계 표시'],
   ['1.0.12','10/27','글자 크게 쓰는 폰에서도 한 칸씩 쌓이게'],
