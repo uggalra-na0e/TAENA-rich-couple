@@ -120,7 +120,7 @@ input[type=text],input[type=number],input[type=date],input[type=month],input[typ
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
 .tb{margin:4px 0}.tb .row{font-size:12px}
-.vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th{padding:3px 4px}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
+.vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th,.uptbl td{padding:3px 4px}.uptbl td{vertical-align:middle}.uptbl .ucd{width:86px;white-space:nowrap}.dday{white-space:nowrap}.uptbl .ucw{width:44px}.uptbl .ucb{width:22px;text-align:center}.uptbl td+td,.sumtbl td+td,.sumtbl th+th{border-left:1px dashed #c9b28d}.uptbl{border:1px dashed #c9b28d}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -190,7 +190,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.8.6';
+const VERSION='0.8.7';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -384,6 +384,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8.7','10/27','곧 나갈 돈을 줄선 있는 표로 (날짜 순, 누구 표시, 칸 맞춤)'],
   ['0.8.6','10/27','예산을 식비(식비+장보기+카페·간식), 배달+외식(배달+외식·데이트) 두 개로. 얇게 줄여 모은 돈 옆에. 우리 재정 상태 칸 없앰'],
   ['0.8.5','10/27','예산을 세로 막대그래프로, 크기 고정 (분류 많으면 옆으로 넘기기)'],
   ['0.8.4','10/27','우리집: 최근 기록을 방 그림 아래로, 양쪽 아래 끝 맞춤. 총 지출을 주니·영이·같이·합계 표로'],
@@ -462,7 +463,10 @@ function nextDue(m){const ds=[...monthData(m).bills.map(b=>ddayOf(m,b.day||10)),
 function ddTag(dd,paid){if(paid)return '<span class="st-badge done">냈어요</span>';if(dd<0)return '<span class="dday" style="background:var(--warn)">'+(-dd)+'일 지남</span>';return '<span class="dday">D-'+(dd||'DAY')+'</span>'}
 function upcomingCard(){if(cur!==ym(today()))return '';const up=fixedFor(cur).filter(x=>!x.paid&&x.dd<=7);const lu=loansFor(cur).filter(x=>!x.paid&&x.dd<=7);const bl=monthData(cur).bills.map(b=>({b,dd:ddayOf(cur,b.day)})).filter(x=>x.dd>=0&&x.dd<=7);
   if(!up.length&&!bl.length&&!lu.length)return '';
-  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈</h3>${bl.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.b.who)} ${esc(x.b.card)} 카드값</span><span>${won(x.b.amount)}</span></div>`).join('')}${lu.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.l.name)} <span class="cat">대출</span></span><span>${won(x.l.monthly)}</span></div>`).join('')}${up.map(x=>`<div class="row"><span>${ddTag(x.dd)} ${esc(x.f.name)} <span class="cat">${esc(fixPay(x.f.pay).replace(' (카드값에 포함)',''))}</span></span><span>${won(x.f.amount)} <button type="button" class="x" data-paid="${x.f.id}" title="냈어요 표시">☐</button></span></div>`).join('')}</div>`}
+  const tr=(dd,name,kind,who,amt,btn)=>`<tr><td class="ucd">${ddTag(dd)}</td><td>${name} <span class="cat">${kind}</span></td><td class="ucw">${who?`<span class="who ${whoCls(who)}">${esc(who)}</span>`:''}</td><td class="m">${won(amt)}</td><td class="ucb">${btn||''}</td></tr>`;
+  const rows=[...bl.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.b.card)+' 카드값','카드값',x.b.who,x.b.amount)})),...lu.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.l.name),'대출',x.l.who,x.l.monthly,`<button type="button" class="x" data-lpaid="${x.l.id}" title="냈어요 표시">☐</button>`)})),
+    ...up.map(x=>({dd:x.dd,h:tr(x.dd,esc(x.f.name),esc(fixPay(x.f.pay).replace(' (카드값에 포함)','')),x.f.who,x.f.amount,`<button type="button" class="x" data-paid="${x.f.id}" title="냈어요 표시">☐</button>`)}))].sort((a,b)=>a.dd-b.dd);
+  return `<div class="card" style="background:#fff3f0"><h3>🔔 곧 나갈 돈 · 아직 안 낸 돈 <span class="r small">${rows.length}건</span></h3><div class="tblwrap"><table class="uptbl">${rows.map(r=>r.h).join('')}</table></div></div>`}
 function vFixed(){const L=fixedFor(cur);const tot=L.reduce((a,x)=>a+Number(x.f.amount),0),left=L.filter(x=>!x.paid).reduce((a,x)=>a+Number(x.f.amount),0);
   return `<div class="view"><div class="toolbar">${monthNav()}<span style="margin-left:auto"></span><button type="button" class="btn" data-fixed="new">＋ 고정지출 추가</button></div>
   <div class="cols"><div class="card"><h3>${mLabel(cur)} 고정지출 <span class="r">합계 <b>${won(tot)}원</b> · 아직 안 낸 돈 <b style="color:var(--red)">${won(left)}원</b></span></h3>
