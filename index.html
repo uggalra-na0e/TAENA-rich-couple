@@ -119,7 +119,7 @@ label.f{display:grid;gap:3px;font-size:11px;color:var(--ink-soft);font-weight:70
 input[type=text],input[type=number],input[type=date],input[type=month],input[type=password],input[type=url],select,textarea{border:2px solid var(--line);background:#fff;padding:6px 8px;width:100%;font-size:14px}
 textarea{min-height:90px;resize:vertical}
 tr.grp td{background:#fbeede;border-top:2px solid var(--line)}tr.sub td{font-size:12px;color:var(--ink-soft)}tr.sub td:first-child{padding-left:14px}
-.bud{margin:6px 0}.sumtbl td,.sumtbl th{padding:3px 4px}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
+.vbud{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;height:170px}.vb{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:12px}.vb .vt{flex:1;width:26px;border:2px solid var(--line);background:#fff;display:flex;align-items:flex-end}.vb .vt i{display:block;width:100%}.vb .pc{font-size:11px;font-weight:700}.vb>b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}.vb .small{white-space:nowrap;font-size:10px}.sumtbl td,.sumtbl th{padding:3px 4px}.sumtbl tr.tot td{border-top:2px solid var(--line);background:#fbeede}.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.pick button{display:grid;gap:2px;text-align:left;padding:10px;border:2px solid var(--line);background:#fff;box-shadow:3px 3px 0 var(--line);cursor:pointer}.pick button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}.pick .pi{font-size:22px}.sumrows{display:grid;gap:3px;margin:6px 0}.sumrows .row{border-bottom:1px dotted var(--line-soft,#d9c9a8);padding:2px 0}
 details.sms{border:2px dashed var(--line);padding:6px 8px;display:grid;gap:6px}details.sms summary{cursor:pointer;font-weight:700;font-size:13px}details.sms[open]{gap:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:2px solid var(--line);background:#fff;padding:2px 8px;cursor:pointer;font-size:12px}
@@ -189,7 +189,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='0.8.4';
+const VERSION='0.8.5';
 const CATS={
   지출:['식비','장보기','카페·간식','외식·데이트','배달','교통·차','주거·관리비','통신','구독','쇼핑','의료','경조사','여행·여가','세금·보험','기타'],
   수입:['월급','3.3% 뗀 수입','안 뗀 부업수입','용돈·선물','기타'],
@@ -387,6 +387,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['0.8.5','10/27','예산을 세로 막대그래프로, 크기 고정 (분류 많으면 옆으로 넘기기)'],
   ['0.8.4','10/27','우리집: 최근 기록을 방 그림 아래로, 양쪽 아래 끝 맞춤. 총 지출을 주니·영이·같이·합계 표로'],
   ['0.8.3','10/27','＋ 적기 버튼 하나로 통합: 현금지출·카드로 쓴 돈·카드값·고정지출·대출·수입/저축·통장 중에 골라 적기'],
   ['0.8.2','10/27','방 그림에 현금지출 표시 추가'],
@@ -413,9 +414,10 @@ const CHANGES=[
 function catSpend(m){const by={};for(const e of monthData(m).es)if(e.type==='지출')by[e.cat]=(by[e.cat]||0)+Number(e.amount||0);return by}
 function budgetRows(m){const b=settings().budgets||{},by=catSpend(m);return Object.entries(b).filter(([,v])=>Number(v)>0).map(([c,v])=>({c,b:Number(v),s:by[c]||0})).sort((a,b)=>b.s/b.b-a.s/a.b)}
 function budgetCard(m){const R=budgetRows(m);
-  return `<div class="card"><h3>${mLabel(m)} 예산 <span class="r"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px;box-shadow:2px 2px 0 var(--line)" data-budget="1">예산 정하기</button></span></h3>${R.length?R.map(x=>{const pc=x.s/x.b*100,over=x.s>x.b,warn=pc>=80;
-    return `<div class="bud"><div class="row"><span>${esc(x.c)} ${over?'<b style="color:var(--red)">🚨 넘음</b>':warn?'<b style="color:var(--warn)">⚠ 거의 다 씀</b>':''}</span><span class="small">${won(x.s)} / ${won(x.b)}원</span></div><div class="hp" style="height:10px"><span style="width:${Math.min(100,pc)}%;background:${over?'var(--red)':warn?'var(--warn)':'var(--good)'}"></span></div><div class="small">${over?won(x.s-x.b)+'원 넘었어요':'남은 돈 '+won(x.b-x.s)+'원'}</div></div>`}).join('')
-    :'<div class="empty">식비·배달처럼 분류마다 한 달 예산을 정하면, 쓸 때마다 얼마나 남았는지 보여 주고 넘으면 빨갛게 알려 줘요.</div>'}</div>`}
+  // 세로 막대, 높이 고정. 분류가 많으면 칸 안에서 옆으로 넘겨 봐요
+  return `<div class="card"><h3>${mLabel(m)} 예산 <span class="r"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px;box-shadow:2px 2px 0 var(--line)" data-budget="1">예산 정하기</button></span></h3>${R.length?`<div class="vbud">${R.map(x=>{const pc=x.s/x.b*100,over=x.s>x.b,warn=pc>=80,col=over?'var(--red)':warn?'var(--warn)':'var(--good)';
+    return `<div class="vb" title="${esc(x.c)} ${won(x.s)} / ${won(x.b)}원"><span class="pc" style="color:${col}">${Math.round(pc)}%</span><div class="vt"><i style="height:${Math.min(100,pc)}%;background:${col}"></i></div><b>${esc(x.c)}</b><span class="small">${over?'<b style="color:var(--red)">'+man(x.s-x.b)+' 넘음</b>':man(x.b-x.s)+' 남음'}</span></div>`}).join('')}</div>`
+    :'<div class="empty">분류마다 한 달 예산을 정하면 막대로 보여 줘요.</div>'}</div>`}
 function budgetDlg(){const s=settings(),b=s.budgets||{};
   openDlg('분류별 한 달 예산',`<div class="small">쓰고 싶은 분류만 적어요. 비우면 예산 없음. 카드·현금 지출 기록을 모두 더해서 비교해요.</div>${CATS.지출.map(c=>`<label class="f">${esc(c)}<input type="text" inputmode="numeric" data-bud="${esc(c)}" value="${b[c]?won(b[c]):''}" placeholder="예) 300,000"></label>`).join('')}`,'저장',()=>{
     const o={};document.querySelectorAll('[data-bud]').forEach(el=>{const n=Number(el.value.replace(/[^0-9]/g,''));if(n>0)o[el.dataset.bud]=n});Store.put({...s,budgets:o});toast('예산을 저장했어요')});
