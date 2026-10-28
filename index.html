@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.22';
+const VERSION='1.0.23';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -316,7 +316,10 @@ const Sync={
 };
 
 // 폰이 보낸 결제 알림(inbox) → 지출 기록. 두 컴퓨터가 같이 처리해도 같은 id라 한 번만 남아요
-function inboxRun(){const list=Store.all('inbox');if(!list.length)return;let n=0;
+function inboxRun(){
+  // 1.0.22까지는 '결제예정' 같은 말이 붙은 승인 알림을 버렸어요 → 최근 3일 것만 다시 읽어요
+  const lost=Object.values(Store.recs).filter(r=>r.kind==='inbox'&&r.del&&!Store.recs['auto_'+r.id]&&BILL_RX.test(r.text||'')&&/승인/.test(r.text||'')&&!/취소/.test(r.text||'')&&Date.now()-(r.t||0)<3*864e5).map(r=>({...r,del:false}));
+  const list=Store.all('inbox').concat(lost);if(!list.length)return;let n=0;
   for(const ib of list){const p=parsePay(ib.text);const who=WHO.includes(ib.who)?ib.who:'주니';
     if(p&&p.cancel){const old=Store.all('entry').filter(e=>e.src==='auto'&&e.amount===p.amount&&e.who===who&&(!p.memo||e.memo===p.memo)).sort((a,b)=>b.date.localeCompare(a.date))[0];if(old){Store.recs[old.id]={...old,del:true,t:Date.now()};Sync.push([Store.recs[old.id]]);n++}}
     else if(p&&p.transfer){const r=xferRule(p);const id='auto_'+ib.id;if(r&&!Store.recs[id]){const e={id,kind:'entry',type:'지출',who,amount:p.amount,cat:CATS.지출.includes(r.cat)?r.cat:CATS.지출[CATS.지출.length-1],memo:r.memo||'이체',date:p.date,pay:'현금·이체',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
@@ -498,6 +501,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.23','10/28','롯데카드 카톡 승인 알림 끝에 \'결제예정금액\' 같은 말이 있으면 버리던 문제 고침(최근 3일 것 다시 읽음)'],
   ['1.0.22','10/28','적기 창에 🖼 스샷 넣기: 결제 알림·문자 캡처를 읽어서 채우기(베타)'],
   ['1.0.21','10/28','롯데 로카페이 "결제" 알림(대중교통 등)도 자동 기록, 카드값 안내 문자는 무시'],
   ['1.0.20','10/28','정해 둔 계좌로 보낸 이체완료 문자는 현금지출로 자동 기록(설정 → 자동으로 적을 이체)'],
@@ -803,9 +807,10 @@ const CAT_HINTS=[
   ['쇼핑',/쿠팡|무신사|11번가|G마켓|지마켓|옥션|올리브영|다이소|29CM|에이블리|지그재그|SSG|신세계|현대백화점|롯데백화점|이케아|네이버페이|스마트스토어|알리|테무/i]];
 const CARD_RX=/(삼성|롯데|신한|현대|KB국민|국민|하나|우리|NH농협|농협|BC|비씨|씨티|카카오뱅크|토스|IBK|기업|쿠팡페이|쿠페이)/;
 function guessCat(s){const list=CATS.지출;for(const[c,rx]of CAT_HINTS)if(rx.test(s)&&list.includes(c))return c;return ''}
+const BILL_RX=/결제\s*예정|결제일|청구\s*금액|청구서|납부\s*안내|명세서/;
 function parsePay(raw){
   const s=String(raw||'').replace(/\r/g,'').replace(/\[Web발신\]|\(광고\)/g,'').replace(/로카페이|LOCA ?PAY/gi,'').trim();if(!s)return null;
-  if(/결제\s*예정|결제일|청구\s*금액|청구서|납부\s*안내|명세서/.test(s))return null; // 카드값 안내는 쓴 돈이 아니에요
+  if(BILL_RX.test(s)&&!/승인|취소/.test(s))return null; // 카드값 안내는 쓴 돈이 아니에요(승인 알림 끝에 붙은 '결제예정금액' 같은 말은 괜찮아요)
   // 금액: 누적·잔액·한도·포인트 금액은 건너뛰기
   let amount=0;const amRx=/(?:금액|결제금액|승인금액)?\s*[:：]?\s*([0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)\s*원/g;let m;
   while((m=amRx.exec(s))){const before=s.slice(Math.max(0,m.index-8),m.index);if(/누적|잔액|한도|포인트|적립|잔여/.test(before))continue;amount=Number(m[1].replace(/,/g,''));break}
