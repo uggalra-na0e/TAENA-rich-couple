@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.23';
+const VERSION='1.0.24';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -316,14 +316,20 @@ const Sync={
 };
 
 // 폰이 보낸 결제 알림(inbox) → 지출 기록. 두 컴퓨터가 같이 처리해도 같은 id라 한 번만 남아요
-function inboxRun(){
+// 폰 알림은 방금 온 거예요 → 읽은 날짜가 받은 날과 3일 넘게 다르면 받은 날로 적어요
+const dayOf=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function sane(date,ib){const got=ib.at||ib.t0||ib.c||ib.t||Date.now();return Math.abs(new Date(date)-new Date(dayOf(got)))>3*864e5?dayOf(got):date}
+function fixAutoDates(){if(ls.get('jy.fixdate1',false))return;const ch=[];
+  for(const e of Store.all('entry'))if(e.src==='auto'&&e.t&&new Date(dayOf(e.t))-new Date(e.date)>20*864e5){Store.recs[e.id]={...e,date:dayOf(e.t),t:Date.now()};ch.push(Store.recs[e.id])}
+  if(ch.length){Sync.push(ch);Store.save();Store.changed();toast('날짜를 잘못 읽은 자동 기록 '+ch.length+'건을 받은 날로 고쳤어요')}ls.set('jy.fixdate1',true)}
+function inboxRun(){fixAutoDates();
   // 1.0.22까지는 '결제예정' 같은 말이 붙은 승인 알림을 버렸어요 → 최근 3일 것만 다시 읽어요
   const lost=Object.values(Store.recs).filter(r=>r.kind==='inbox'&&r.del&&!Store.recs['auto_'+r.id]&&BILL_RX.test(r.text||'')&&/승인/.test(r.text||'')&&!/취소/.test(r.text||'')&&Date.now()-(r.t||0)<3*864e5).map(r=>({...r,del:false}));
   const list=Store.all('inbox').concat(lost);if(!list.length)return;let n=0;
   for(const ib of list){const p=parsePay(ib.text);const who=WHO.includes(ib.who)?ib.who:'주니';
     if(p&&p.cancel){const old=Store.all('entry').filter(e=>e.src==='auto'&&e.amount===p.amount&&e.who===who&&(!p.memo||e.memo===p.memo)).sort((a,b)=>b.date.localeCompare(a.date))[0];if(old){Store.recs[old.id]={...old,del:true,t:Date.now()};Sync.push([Store.recs[old.id]]);n++}}
     else if(p&&p.transfer){const r=xferRule(p);const id='auto_'+ib.id;if(r&&!Store.recs[id]){const e={id,kind:'entry',type:'지출',who,amount:p.amount,cat:CATS.지출.includes(r.cat)?r.cat:CATS.지출[CATS.지출.length-1],memo:r.memo||'이체',date:p.date,pay:'현금·이체',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
-    else if(p&&!selfIn(p)){const id='auto_'+ib.id;if(!Store.recs[id]){const e={id,kind:'entry',type:p.type,who,amount:p.amount,cat:p.cat||CATS[p.type][CATS[p.type].length-1],memo:p.memo,date:p.date,pay:p.type==='지출'?'카드':'',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
+    else if(p&&!selfIn(p)){const id='auto_'+ib.id;p.date=sane(p.date,ib);if(!Store.recs[id]){const e={id,kind:'entry',type:p.type,who,amount:p.amount,cat:p.cat||CATS[p.type][CATS[p.type].length-1],memo:p.memo,date:p.date,pay:p.type==='지출'?'카드':'',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
     Store.recs[ib.id]={...ib,del:true,t:Date.now()};Sync.push([Store.recs[ib.id]])}
   Store.save();Store.changed();if(n)toast('폰 결제 알림 '+n+'건을 가계부에 적었어요')}
 
@@ -501,6 +507,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.24','10/28','롯데 카톡 알림의 카드 이름 숫자(LIKIT 1.2)를 1월 2일로 잘못 읽던 문제 고침 + 가게 이름 읽기, 잘못 들어간 자동 기록 날짜 바로잡음'],
   ['1.0.23','10/28','롯데카드 카톡 승인 알림 끝에 \'결제예정금액\' 같은 말이 있으면 버리던 문제 고침(최근 3일 것 다시 읽음)'],
   ['1.0.22','10/28','적기 창에 🖼 스샷 넣기: 결제 알림·문자 캡처를 읽어서 채우기(베타)'],
   ['1.0.21','10/28','롯데 로카페이 "결제" 알림(대중교통 등)도 자동 기록, 카드값 안내 문자는 무시'],
@@ -823,7 +830,8 @@ function parsePay(raw){
   // 날짜
   const now=new Date();let y=now.getFullYear(),mo=null,d=null;
   if((m=s.match(/(20\d\d)[.\-\/년]\s*(\d{1,2})[.\-\/월]\s*(\d{1,2})/))){y=+m[1];mo=+m[2];d=+m[3]}
-  else if((m=s.match(/(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?=\s|$|\s*\d{1,2}:|\s*\()/m))||(m=s.match(/(\d{1,2})월\s*(\d{1,2})일/))){mo=+m[1];d=+m[2]}
+  // 시각이 붙은 '10/28 09:04'를 먼저 봐요('LOCA LIKIT 1.2(9*4*)' 같은 카드 이름 숫자를 날짜로 읽지 않게)
+  else if((m=s.match(/(?<![\d.])(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s+\d{1,2}:\d{2}/))||(m=s.match(/(\d{1,2})월\s*(\d{1,2})일/))||(m=s.match(/(?<![\d.A-Za-z]\s?)(\d{1,2})\s*[\/\-]\s*(\d{1,2})(?=\s|$|\s*\()/m))){mo=+m[1];d=+m[2]}
   let date=today();
   if(mo>=1&&mo<=12&&d>=1&&d<=31){let dt=new Date(y,mo-1,d);if(dt-now>3*864e5)dt=new Date(y-1,mo-1,d);date=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
   // 가게 이름
@@ -832,6 +840,7 @@ function parsePay(raw){
     memo=((t.match(/([가-힣A-Za-z㈜()&.]{2,20})\s*입금/)||[])[1]||(t.match(/입금[^\n]*?원?\s+([가-힣A-Za-z㈜()&.]{2,20})/)||[])[1]||'').replace(/^(KB|국민|신한|우리|하나|농협|NH|기업|카카오뱅크|토스뱅크)$/,'');
     return {amount,date,memo:memo||'입금',card:'',type:'수입',cat:(/급여|월급/.test(s)&&CATS.수입.includes('월급'))?'월급':'',cancel:false}}
   if((m=s.match(/(?:가맹점(?:명)?|사용처|이용처|상호)\s*[:：]?\s*([^\n]+)/)))memo=m[1];
+  if(!memo&&((m=s.match(/([^\n]{2,40})\n\s*[0-9,]+\s*원\s*(?:승인|결제)/))||(m=s.match(/^([^\n0-9]{2,50}?)\s+[0-9,]+\s*원\s*(?:승인|결제)/m))))memo=m[1].replace(/^\s*(롯데|삼성|신한|국민|KB|현대|하나|우리|농협|NH|BC|비씨)?\s*카드\s*(승인)?\s*/,'').trim(); // 롯데 카톡: 가게 이름 다음 줄에 '4,100원 승인'
   if(!memo&&(m=s.match(/\d{1,2}:\d{2}(?::\d{2})?\s+([^\n]+)/)))memo=m[1].replace(/\s*(누적|잔액|사용가능).*$/,'');
   if(!memo){const lines=s.split('\n').map(x=>x.trim()).filter(Boolean);
     const tIdx=lines.findIndex(x=>/\d{1,2}:\d{2}/.test(x));
