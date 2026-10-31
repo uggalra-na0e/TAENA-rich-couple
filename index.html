@@ -262,7 +262,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.32';
+const VERSION='1.0.33';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -558,6 +558,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.33','10/31','폰 최근 기록: 끝에 닿은 뒤 같은 손가락으로 계속 밀어도 화면 전체가 따라 움직이게(관성 포함)'],
   ['1.0.32','10/31','폰 최근 기록: 목록 맨 위·맨 아래까지 밀면 이어서 화면 전체가 움직이게'],
   ['1.0.31','10/31','날짜별 달력: 칸 안 금액이 잘리지 않게(10만 넘으면 "16만"처럼, 넘치면 글자 자동 축소)'],
   ['1.0.30','10/31','폰 글자 키움(우리집 빼고 모든 탭·적기 창): 작은 글자 12px 이상, 넓은 표는 옆으로 밀어서 보기. 전체 버튼 다시 점검'],
@@ -670,6 +671,14 @@ function fitWide(root){for(const el of (root||document).querySelectorAll('.sumtb
   else if(ph&&el.tagName==='TABLE'&&box.scrollWidth>box.clientWidth+1){el.style.fontSize='';for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';el.classList.add('stack');
     const hr=[...el.rows].find(r=>r.querySelector('th')&&!r.querySelector('td')),H=hr?[...hr.cells].map(c=>c.textContent.trim()):[];
     for(const r of el.rows)[...r.cells].forEach((c,i)=>{if(H[i]&&i>0&&/^[−+\-]?[0-9,.%]+(원)?$|^아직$/.test(c.textContent.trim()))c.dataset.l=H[i];else delete c.dataset.l})}}}
+// 폰 최근 기록: 목록 끝(맨 위·맨 아래)에 닿은 뒤에도 같은 손가락으로 계속 밀면 화면 전체가 따라 움직여요
+// (크롬은 한 번 민 동작을 목록에 붙잡아 두어서, 끝에 닿으면 화면을 직접 움직여 줘요)
+(()=>{let y0=null,el=null,v=0,t0=0;
+  document.addEventListener('touchstart',e=>{el=e.target.closest&&e.target.closest('.recent .rin');y0=el?e.touches[0].clientY:null;v=0;t0=e.timeStamp},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!el||y0==null)return;const y=e.touches[0].clientY,dy=y0-y;y0=y;
+    const top=el.scrollTop<=0,bot=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+    if((dy<0&&top)||(dy>0&&bot)){e.preventDefault();scrollBy(0,dy);const dt=Math.max(1,e.timeStamp-t0);v=dy/dt}else v=0;t0=e.timeStamp},{passive:false});
+  document.addEventListener('touchend',()=>{if(el&&Math.abs(v)>.3){let s=v*16;const f=()=>{scrollBy(0,s);s*=.94;if(Math.abs(s)>.5)requestAnimationFrame(f)};requestAnimationFrame(f)}el=null;y0=null},{passive:true})})();
 addEventListener('resize',()=>{clearTimeout(fitWide.t);fitWide.t=setTimeout(()=>fitWide(),150)});
 function render(){
   applyCats();
