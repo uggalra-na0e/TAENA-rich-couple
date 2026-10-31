@@ -86,9 +86,9 @@ td.m,th.m{text-align:right;white-space:nowrap}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .nod{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:5px 0;border-bottom:2px dotted var(--line-2,#d8cbb8)}.nod .cat{grid-column:1/-1;font-size:11px}.nod .m{white-space:nowrap}
 .cal .wd{text-align:center;font-size:12px;font-weight:700;padding:2px 0}
-.cal .dc{all:unset;box-sizing:border-box;cursor:pointer;min-height:54px;padding:3px 3px;border:2px solid var(--line);background:var(--paper);display:flex;flex-direction:column;align-items:flex-end;gap:1px;overflow:hidden}
+.cal .dc{all:unset;box-sizing:border-box;cursor:pointer;min-height:54px;padding:3px 2px;min-width:0;border:2px solid var(--line);background:var(--paper);display:flex;flex-direction:column;align-items:flex-end;gap:1px;overflow:hidden}
 .cal .dc.emp{border-color:transparent;background:none;cursor:default}
-.cal .dc b{align-self:flex-start;font-size:12px}.cal .dc i{font-style:normal;font-size:11px;white-space:nowrap;line-height:1.15}
+.cal .dc b{align-self:flex-start;font-size:12px}.cal .dc i{font-style:normal;font-size:11px;white-space:nowrap;line-height:1.15;display:block;max-width:100%;text-align:right;letter-spacing:-.03em}
 .cal .dc.on{background:var(--coin);outline:2px solid var(--line)}.cal .dc.td b{text-decoration:underline}
 .cal .dc.sun b,.cal .wd.sun{color:var(--red)}.cal .dc.sat b,.cal .wd.sat{color:#3b6fd0}
 @media (max-width:420px){.cal .dc{min-height:46px;padding:2px}.cal .dc i{font-size:9.5px}}
@@ -262,7 +262,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.30';
+const VERSION='1.0.31';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -399,10 +399,10 @@ function vDay(){
   const es=monthData(cur).es.filter(e=>!e.fixedRef&&(dayWho==='전체'||e.who===dayWho)),[y,mo]=cur.split('-').map(Number),last=new Date(y,mo,0).getDate(),first=new Date(y,mo-1,1).getDay(),td=today();
   if(!dayPick||ym(dayPick)!==cur)dayPick=ym(td)===cur?td:(sortDesc(es.slice())[0]||{}).date||cur+'-01';
   const by={};for(const e of es){const o=by[e.date]||(by[e.date]={out:0,inc:0,n:0});o.n++;if(e.type==='지출')o.out+=Number(e.amount||0);else if(e.type==='수입')o.inc+=Number(e.amount||0)}
-  const short=v=>v>=10000?(Math.round(v/1000)/10).toString().replace(/\.0$/,'')+'만':won(v);
+  const short=v=>v>=1e8?(Math.round(v/1e7)/10)+'억':v>=1e5?Math.round(v/1e4)+'만':v>=1e4?(Math.round(v/1e3)/10).toString().replace(/\.0$/,'')+'만':won(v); // 칸이 좁아서 10만 넘으면 소수점 없이
   let cells='';for(let i=0;i<first;i++)cells+='<span class="dc emp"></span>';
   for(let d=1;d<=last;d++){const k=cur+'-'+pad(d),o=by[k],w=(first+d-1)%7;
-    cells+=`<button type="button" class="dc${k===dayPick?' on':''}${k===td?' td':''}${w===0?' sun':w===6?' sat':''}" data-day="${k}"><b>${d}</b>${o&&o.out?`<i>${short(o.out)}</i>`:''}${o&&o.inc?`<i class="plus">+${short(o.inc)}</i>`:''}</button>`}
+    cells+=`<button type="button" class="dc${k===dayPick?' on':''}${k===td?' td':''}${w===0?' sun':w===6?' sat':''}" data-day="${k}"><b>${d}</b>${o&&o.out?`<i>${short(o.out)}</i>`:''}${o&&o.inc?`<i class="plus">${short(o.inc)}</i>`:''}</button>`}
   const L=sortDesc(es.filter(e=>e.date===dayPick)),o=by[dayPick]||{out:0,inc:0},dw='일월화수목금토'[new Date(dayPick).getDay()];
   const mOut=Object.values(by).reduce((a,x)=>a+x.out,0),days=Object.values(by).filter(x=>x.out).length;
   const S=spendSum(cur).by,wk=dayWho==='전체'?'all':dayWho,nod=[['📌 고정지출','fixed',S.fixed[wk],'매달 나가는 돈 (고정지출 탭)'],['🏦 대출','loan',S.loan[wk],'이번 달 갚는 돈'],['💳 카드값 중 못 적은 것','card',S.gap[wk],'다음 달 카드값 − 하나하나 적은 카드 기록']].filter(x=>x[2]>0),nodSum=nod.reduce((a,x)=>a+x[2],0);
@@ -558,6 +558,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.31','10/31','날짜별 달력: 칸 안 금액이 잘리지 않게(10만 넘으면 "16만"처럼, 넘치면 글자 자동 축소)'],
   ['1.0.30','10/31','폰 글자 키움(우리집 빼고 모든 탭·적기 창): 작은 글자 12px 이상, 넓은 표는 옆으로 밀어서 보기. 전체 버튼 다시 점검'],
   ['1.0.29','10/31','날짜별 탭에 "날짜 없는 돈" 칸(고정지출·대출·못 적은 카드값): 날짜 있는 돈 + 날짜 없는 돈 = 총 지출'],
   ['1.0.28','10/31','날짜별 탭 새로: 달력에 날마다 쓴 돈·들어온 돈(전체·주니·영이·같이 따로 보기), 날짜 누르면 그날 기록 보기·적기'],
@@ -681,7 +682,7 @@ function render(){
   if(view==='home')drawHome();
   // 우리집이 아닌 탭: 내용 맨 아래 오른쪽에 '우리집' 버튼 (고정지출 탭은 대출 위)
   if(view!=='home'&&!WIDGET){const v=main.querySelector('.view');if(v){const row=document.createElement('div');row.className='homerow';row.innerHTML='<button type="button" class="btn ghost homebtn" data-v="home">🏠 우리집</button>';const c=view==='fixed'&&v.querySelector(':scope>.cols');if(c)c.after(row);else v.appendChild(row)}}
-  fitWide(main);syncHist();
+  fitWide(main);for(const i of main.querySelectorAll('.cal .dc i')){let f=parseFloat(getComputedStyle(i).fontSize);while(i.scrollWidth>i.clientWidth+.5&&f>7){f-=.5;i.style.fontSize=f+'px'}}syncHist();
 }
 // 뒤로가기: 다른 탭이면 우리집으로, 우리집이면 원래대로 나가요
 function syncHist(){if(WIDGET)return;const sub=history.state&&history.state.jySub;
