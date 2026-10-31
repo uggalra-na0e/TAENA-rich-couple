@@ -211,6 +211,25 @@ html.widget .fab{display:none}
   .fab{padding:8px 13px;font-size:14px;box-shadow:3px 3px 0 var(--line)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* 폰 글자 키우기(우리집 제외 탭·적기 창): 작은 글자 12px 아래로 안 내려가게, 넓은 표는 글자를 줄이는 대신 옆으로 밀어서 봐요 */
+@media (max-width:640px){
+  html:not([data-view=home]) .view{font-size:14px}
+  html:not([data-view=home]) .view .small,html:not([data-view=home]) .view .cat,html:not([data-view=home]) .view th,html:not([data-view=home]) .view .legend,html:not([data-view=home]) .view .bars .l,html:not([data-view=home]) .view .who{font-size:12.5px}
+  html:not([data-view=home]) .view td{font-size:13.5px}
+  html:not([data-view=home]) .view .card h3{font-size:13.5px}
+  html:not([data-view=home]) .view .trend .c{font-size:11.5px}
+  html:not([data-view=home]) .view .cal .dc b{font-size:13px}html:not([data-view=home]) .view .cal .dc i{font-size:11px}
+  html:not([data-view=home]) .view .sumtbl td,html:not([data-view=home]) .view .sumtbl th{font-size:12.5px!important}
+  #dlg{font-size:14px}#dlg label.f{font-size:12.5px}#dlg .small,#dlg .cat,#dlg th{font-size:12.5px}#dlg td{font-size:13.5px}
+  #dlg input,#dlg select,#dlg textarea{font-size:16px}
+  .view .tblwrap{-webkit-overflow-scrolling:touch}
+  table.sticky1 td:first-child,table.sticky1 th:first-child{position:sticky;left:0;background:var(--paper);z-index:1;box-shadow:2px 0 0 #d8cbb8}
+  table.stack,table.stack tbody{display:block}table.stack tr{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:6px 0;border-bottom:2px dotted #d8cbb8}
+  table.stack tr:has(th){display:none}table.stack td{display:block;border:0!important;padding:0!important;white-space:normal}
+  table.stack td:empty{display:none}table.stack td[data-l]::before{content:attr(data-l) ' ';font-size:11.5px;color:var(--ink-soft)}
+  table.stack td.m,table.stack td[data-l]{margin-left:auto;white-space:nowrap}
+}
+@media (max-width:380px){html:not([data-view=home]) .view .cal .dc i{font-size:10px}}
 </style>
 
 <div class="win">
@@ -243,7 +262,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.29';
+const VERSION='1.0.30';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -539,6 +558,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.30','10/31','폰 글자 키움(우리집 빼고 모든 탭·적기 창): 작은 글자 12px 이상, 넓은 표는 옆으로 밀어서 보기. 전체 버튼 다시 점검'],
   ['1.0.29','10/31','날짜별 탭에 "날짜 없는 돈" 칸(고정지출·대출·못 적은 카드값): 날짜 있는 돈 + 날짜 없는 돈 = 총 지출'],
   ['1.0.28','10/31','날짜별 탭 새로: 달력에 날마다 쓴 돈·들어온 돈(전체·주니·영이·같이 따로 보기), 날짜 누르면 그날 기록 보기·적기'],
   ['1.0.27','10/31','폰: 우리집 최근 기록을 일정 길이로 고정하고 안에서 스크롤'],
@@ -640,13 +660,21 @@ function vWish(){
 // 숫자가 아주 커져도 칸이 넓어지지 않게: 넘치면 글자를 줄여서 맞춰요 (최소 7px)
 function fitWide(root){for(const el of (root||document).querySelectorAll('.sumtbl,.view .tblwrap>table,#dlg .tblwrap>table,.big,.halfcard .small')){el.style.fontSize='';if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';
   const box=el.tagName==='TABLE'?el.parentElement:el;let fs=parseFloat(getComputedStyle(el).fontSize),n=0;
-  while(box.scrollWidth>box.clientWidth+1&&fs>7&&n++<30){fs-=.5;el.style.setProperty('font-size',fs+'px','important');if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.setProperty('font-size',fs+'px','important')}}}
+  const ph=innerWidth<=640&&view!=='home',min=ph&&(el.tagName==='TABLE'||el.classList.contains('small'))?12:7;el.classList.remove('stack','sticky1');
+  while(box.scrollWidth>box.clientWidth+1&&fs>min&&n++<30){fs-=.5;el.style.setProperty('font-size',fs+'px','important');if(el.tagName==='TABLE')for(const c of el.querySelectorAll('td,th'))c.style.setProperty('font-size',fs+'px','important')}
+  // 폰: 12px로도 안 들어가는 표는 한 줄을 카드처럼 접어서 보여 줘요(칸 이름을 숫자 앞에 붙여요)
+  const numTbl=el.tagName==='TABLE'&&[...el.rows].some(r=>[...r.cells].filter(c=>/^[−+\-]?[0-9,.]+$/.test(c.textContent.trim())).length>=4);
+  if(ph&&numTbl&&box.scrollWidth>box.clientWidth+1)el.classList.add('sticky1'); // 숫자 칸이 많은 표(분류별 지출 등)는 첫 칸을 붙여 두고 옆으로 밀어서 봐요
+  else if(ph&&el.tagName==='TABLE'&&box.scrollWidth>box.clientWidth+1){el.style.fontSize='';for(const c of el.querySelectorAll('td,th'))c.style.fontSize='';el.classList.add('stack');
+    const hr=[...el.rows].find(r=>r.querySelector('th')&&!r.querySelector('td')),H=hr?[...hr.cells].map(c=>c.textContent.trim()):[];
+    for(const r of el.rows)[...r.cells].forEach((c,i)=>{if(H[i]&&i>0&&/^[−+\-]?[0-9,.%]+(원)?$|^아직$/.test(c.textContent.trim()))c.dataset.l=H[i];else delete c.dataset.l})}}}
 addEventListener('resize',()=>{clearTimeout(fitWide.t);fitWide.t=setTimeout(()=>fitWide(),150)});
 function render(){
   applyCats();
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.v===view));
   document.getElementById('meBtn').textContent='나: '+me()+' ▾';
   const keepWish=document.getElementById('wishTxt')?.value;
+  document.documentElement.dataset.view=WIDGET?'widget':view;
   if(WIDGET){main.innerHTML=vWidget();drawHome();return}
   main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,loan:vFixed,inc:vIncome,save:vSave,report:vReport,day:vDay,tax:vTax,wish:vWish}[view]||vHome)();
   if(keepWish&&document.getElementById('wishTxt'))document.getElementById('wishTxt').value=keepWish;
