@@ -57,7 +57,7 @@ button,input,select,textarea{font:inherit;color:var(--ink)}
 .cols>.side:last-child{display:flex;flex-direction:column}.cols>.side>:last-child{flex:1}
 .leftcol{display:flex;flex-direction:column;gap:12px;min-width:0}.leftcol .room{align-self:stretch}
 .recent{flex:1;display:flex;flex-direction:column}.recent .rbox{flex:1;position:relative;min-height:96px}.recent .rin{position:absolute;inset:0;overflow:auto}
-@media (max-width:820px){.recent .rbox{min-height:0}.recent .rin{position:static;max-height:none}}
+@media (max-width:820px){.recent .rbox{min-height:0}.recent .rin{position:static;max-height:560px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}}
 .card{border:3px solid var(--line);background:var(--paper);padding:10px 12px;box-shadow:4px 4px 0 var(--line);min-width:0}
 .card h3{margin:0 0 6px;font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .card h3 .r{margin-left:auto}
@@ -233,7 +233,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.26';
+const VERSION='1.0.27';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -509,6 +509,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.27','10/31','폰: 우리집 최근 기록을 일정 길이로 고정하고 안에서 스크롤'],
   ['1.0.26','10/28','네이버페이 "○○에서 N원 결제" 알림: 가게 이름·분류 제대로 읽기, 같은 결제가 카드 알림으로도 오면 한 번만 적기'],
   ['1.0.25','10/28','예산 묶음 바꿈: 카페·간식을 식비에서 배달+외식 쪽으로 옮김'],
   ['1.0.24','10/28','롯데 카톡 알림의 카드 이름 숫자(LIKIT 1.2)를 1월 2일로 잘못 읽던 문제 고침 + 가게 이름 읽기, 잘못 들어간 자동 기록 날짜 바로잡음'],
