@@ -276,7 +276,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.37';
+const VERSION='1.0.38';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -369,7 +369,7 @@ function inboxRun(){fixAutoDates();
   // 1.0.22까지는 '결제예정' 같은 말이 붙은 승인 알림을 버렸어요 → 최근 3일 것만 다시 읽어요
   const lost=Object.values(Store.recs).filter(r=>r.kind==='inbox'&&r.del&&!Store.recs['auto_'+r.id]&&BILL_RX.test(r.text||'')&&/승인/.test(r.text||'')&&!/취소/.test(r.text||'')&&Date.now()-(r.t||0)<3*864e5).map(r=>({...r,del:false}));
   const list=Store.all('inbox').concat(lost);if(!list.length)return;let n=0;
-  for(const ib of list){const p=parsePay(ib.text);const who=WHO.includes(ib.who)?ib.who:'주니';
+  for(const ib of list){const raw=String(ib.text||'');const p=/\(광고\)|\[광고\]/.test(raw)||!/카드|페이|pay|은행|뱅크|bank|입금|출금|이체|승인/i.test(raw)?null:parsePay(raw);/* 광고·친구 대화 같은 건 안 적어요 */const who=WHO.includes(ib.who)?ib.who:'주니';
     if(p&&p.cancel){const old=Store.all('entry').filter(e=>e.src==='auto'&&e.amount===p.amount&&e.who===who&&(!p.memo||e.memo===p.memo)).sort((a,b)=>b.date.localeCompare(a.date))[0];if(old){Store.recs[old.id]={...old,del:true,t:Date.now()};Sync.push([Store.recs[old.id]]);n++}}
     else if(p&&p.transfer){const r=xferRule(p);const id='auto_'+ib.id;if(r&&!Store.recs[id]){const e={id,kind:'entry',type:'지출',who,amount:p.amount,cat:CATS.지출.includes(r.cat)?r.cat:CATS.지출[CATS.지출.length-1],memo:r.memo||'이체',date:p.date,pay:'현금·이체',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
     else if(p&&!selfIn(p)){const id='auto_'+ib.id;p.date=sane(p.date,ib);const twin=Object.values(Store.recs).find(r=>!r.del&&r.kind==='entry'&&r.src==='auto'&&r.at&&r.id!==id&&r.amount===p.amount&&r.type===p.type&&Math.abs(r.at-(ib.t||0))<15*60000);
@@ -574,6 +574,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.38','11/02','삼성카드 카톡 "전자상거래이용" 알림 가게 이름 정리, 폰 자동 기록은 광고·카드와 상관없는 대화는 안 적게'],
   ['1.0.37','11/01','카드값 나눠 보기 설명 칸 빼고 원래대로(계산은 그대로: 청구 총액에서 고정비·적은 카드 빼고 나머지만 더함)'],
   ['1.0.36','11/01','카드값 탭: 이번 달 나가는 카드값을 고정지출 / 적어 둔 카드 / 못 적은 것으로 나눠 보여 줘서 두 번 안 세는 걸 바로 보이게'],
   ['1.0.35','11/01','카드값 탭: "이번 달에 나가는 카드값(지난달에 쓴 돈)" 칸 따로, 청구서 적을 때 언제 나가는지 고르기(기본 이번 달), 폰에서 맞춰 보기 표 안 잘리게'],
@@ -943,7 +944,7 @@ function parsePay(raw){
     const tIdx=lines.findIndex(x=>/\d{1,2}:\d{2}/.test(x));
     const cand=(tIdx>=0?lines.slice(tIdx+1):lines).find(x=>!/원|승인|누적|잔액|님$|^\d|카드|일시불|할부|결제|취소|안내/.test(x));
     memo=cand||''}
-  memo=memo.replace(/\s*(일시불|\d+개월|할부).*/,'').replace(/[\[\]]/g,'').trim().slice(0,30);
+  memo=memo.replace(/\s*(일시불|\d+개월|할부).*/,'').replace(/\s*[0-9][0-9,]*\s*원.*$/,'').replace(/[\[\]]/g,'').trim().slice(0,30);
   if(!memo&&/쿠팡/.test(s))memo='쿠팡';
   if(!memo&&/대중교통|모바일 ?교통|교통카드/.test(s))memo='대중교통';
   const card=(s.match(CARD_RX)||[])[1]||'';
