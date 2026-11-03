@@ -259,7 +259,7 @@ html.widget .fab{display:none}
     <button class="tab" role="tab" data-v="home">우리집</button>
     <button class="tab" role="tab" data-v="day">날짜별</button>
     <button class="tab" role="tab" data-v="card">카드값</button>
-    <button class="tab" role="tab" data-v="spend">현금지출</button>
+    <button class="tab" role="tab" data-v="spend">현금·체크</button>
     <button class="tab" role="tab" data-v="fixed">고정지출</button>
     <button class="tab" role="tab" data-v="inc">수입</button>
     <button class="tab" role="tab" data-v="save">모은 돈</button>
@@ -276,7 +276,7 @@ html.widget .fab{display:none}
 
 <script>
 /* ---------- 기본값 ---------- */
-const VERSION='1.0.38';
+const VERSION='1.0.39';
 // 분류 = 대분류 → 소분류. 기록에는 소분류 이름만 저장되고, 대분류는 여기서 찾아요
 const TREE0={
   지출:[['🍚 먹는 데',['식비','장보기','카페·간식','외식·데이트','배달']],['🏠 주거·생활',['주거·관리비','통신','구독','생활용품']],['🚗 교통',['교통·차','주유·주차']],
@@ -374,7 +374,7 @@ function inboxRun(){fixAutoDates();
     else if(p&&p.transfer){const r=xferRule(p);const id='auto_'+ib.id;if(r&&!Store.recs[id]){const e={id,kind:'entry',type:'지출',who,amount:p.amount,cat:CATS.지출.includes(r.cat)?r.cat:CATS.지출[CATS.지출.length-1],memo:r.memo||'이체',date:p.date,pay:'현금·이체',src:'auto',t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
     else if(p&&!selfIn(p)){const id='auto_'+ib.id;p.date=sane(p.date,ib);const twin=Object.values(Store.recs).find(r=>!r.del&&r.kind==='entry'&&r.src==='auto'&&r.at&&r.id!==id&&r.amount===p.amount&&r.type===p.type&&Math.abs(r.at-(ib.t||0))<15*60000);
       if(twin&&!Store.recs[id]){if(!twin.memo||/^네이버페이|^N ?Pay/i.test(twin.memo)){if(p.memo&&!/^네이버페이|^N ?Pay/i.test(p.memo)){Store.recs[twin.id]={...twin,memo:p.memo,cat:p.cat||twin.cat,t:Date.now()};Sync.push([Store.recs[twin.id]])}}}
-      else if(!Store.recs[id]){const e={id,kind:'entry',type:p.type,who,amount:p.amount,cat:p.cat||CATS[p.type][CATS[p.type].length-1],memo:p.memo,date:p.date,pay:p.type==='지출'?'카드':'',src:'auto',at:ib.t||Date.now(),t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
+      else if(!Store.recs[id]){const e={id,kind:'entry',type:p.type,who,amount:p.amount,cat:p.cat||CATS[p.type][CATS[p.type].length-1],memo:p.memo,date:p.date,pay:p.type==='지출'?(p.check?'체크카드':'카드'):'',src:'auto',at:ib.t||Date.now(),t:Date.now(),by:who};Store.recs[id]=e;Sync.push([e]);n++}}
     Store.recs[ib.id]={...ib,del:true,t:Date.now()};Sync.push([Store.recs[ib.id]])}
   Store.save();Store.changed();if(n)toast('폰 결제 알림 '+n+'건을 가계부에 적었어요')}
 
@@ -405,7 +405,7 @@ const main=document.getElementById('main');
 function monthNav(){return `<span class="month"><button type="button" data-mon="-1" aria-label="이전 달">◀</button>${mLabel(cur)}<button type="button" data-mon="1" aria-label="다음 달">▶</button></span>`}
 function entryRows(list,del=true){
   if(!list.length)return '<div class="empty">아직 기록이 없어요. 아래 버튼으로 첫 기록을 적어 보세요.</div>';
-  return `<div class="tblwrap"><table>${list.map(e=>`<tr><td>${e.date.slice(5).replace('-','/')}</td><td><span class="who ${whoCls(e.who)}">${esc(e.who)}</span>${esc(e.memo||e.cat)} <span class="cat">${esc(e.cat)}${e.pay==='카드'?' · 카드':''}</span></td><td class="m ${e.type!=='지출'?'plus':''}">${e.type==='지출'?'−':'+'}${won(e.amount)}</td>${del?`<td class="m"><button type="button" class="x" data-edit="${e.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${e.id}" aria-label="지우기">✕</button></td>`:''}</tr>`).join('')}</table></div>`}
+  return `<div class="tblwrap"><table>${list.map(e=>`<tr><td>${e.date.slice(5).replace('-','/')}</td><td><span class="who ${whoCls(e.who)}">${esc(e.who)}</span>${esc(e.memo||e.cat)} <span class="cat">${esc(e.cat)}${e.pay==='카드'?' · 카드':e.pay==='체크카드'?' · 체크':''}</span></td><td class="m ${e.type!=='지출'?'plus':''}">${e.type==='지출'?'−':'+'}${won(e.amount)}</td>${del?`<td class="m"><button type="button" class="x" data-edit="${e.id}" aria-label="고치기">✎</button><button type="button" class="x" data-del="${e.id}" aria-label="지우기">✕</button></td>`:''}</tr>`).join('')}</table></div>`}
 // 날짜별 탭: 달력에 날마다 쓴 돈(지출 전부, 카드·현금 다)·들어온 돈, 날짜를 누르면 그날 기록
 let dayPick=null,dayWho='전체',preDate=null;
 function vDay(){
@@ -496,7 +496,7 @@ function vSpend(){
   const tot=list.reduce((a,e)=>a+Number(e.amount),0);
   return `<div class="view"><div class="toolbar">${monthNav()}<span class="seg">${['전체',...WHO].map(w=>`<button type="button" data-who="${w}" aria-pressed="${w===spendWho}">${w}</button>`).join('')}</span>
   <span class="sp" style="margin-left:auto"></span><button type="button" class="btn" data-add="지출" data-pay="현금·이체">＋ 현금지출 적기</button></div>
-  <div class="card"><h3>${mLabel(cur)} ${spendWho==='전체'?'':spendWho+'의 '}현금지출 <span class="r">합계 <b>${won(tot)}원</b></span></h3>${list.length?entryRows(list):'<div class="empty">현금·계좌이체로 쓴 돈이 여기에 모여요. 카드로 쓴 건 카드값 탭에 있어요.</div>'}</div></div>`}
+  <div class="card"><h3>${mLabel(cur)} ${spendWho==='전체'?'':spendWho+'의 '}현금·체크 지출 <span class="r">합계 <b>${won(tot)}원</b></span></h3>${list.length?entryRows(list):'<div class="empty">현금·계좌이체로 쓴 돈이 여기에 모여요. 카드로 쓴 건 카드값 탭에 있어요.</div>'}</div></div>`}
 
 // 수입 탭: 월급 / 부수입(사업·프리랜서) / 기타 로 묶어서 봐요
 // 우리 원칙: 월급으로만 살림을 해결해요. 월급 − 총 지출(대출 포함) = 남긴 돈. 매달 목표(기본 100만원)만큼 남기면 잘한 달, 부수입은 덤.
@@ -574,6 +574,7 @@ function vReport(){
 
 // 업데이트 기록 (새 버전마다 맨 위에 추가)
 const CHANGES=[
+  ['1.0.39','11/03','결제에 신용카드/체크카드 나눔(체크는 현금·체크 탭), 세금 탭에 카드 소득공제 문턱·한도 막대, 문턱 넘거나 한도 차면 앱이 알려 줌'],
   ['1.0.38','11/02','삼성카드 카톡 "전자상거래이용" 알림 가게 이름 정리, 폰 자동 기록은 광고·카드와 상관없는 대화는 안 적게'],
   ['1.0.37','11/01','카드값 나눠 보기 설명 칸 빼고 원래대로(계산은 그대로: 청구 총액에서 고정비·적은 카드 빼고 나머지만 더함)'],
   ['1.0.36','11/01','카드값 탭: 이번 달 나가는 카드값을 고정지출 / 적어 둔 카드 / 못 적은 것으로 나눠 보여 줘서 두 번 안 세는 걸 바로 보이게'],
@@ -710,7 +711,7 @@ function render(){
   if(WIDGET){main.innerHTML=vWidget();drawHome();return}
   main.innerHTML=({home:vHome,spend:vSpend,card:vCard,fixed:vFixed,loan:vFixed,inc:vIncome,save:vSave,report:vReport,day:vDay,tax:vTax,wish:vWish}[view]||vHome)();
   if(keepWish&&document.getElementById('wishTxt'))document.getElementById('wishTxt').value=keepWish;
-  if(view==='home')drawHome();
+  if(view==='home'){drawHome();dedNotify()}
   // 우리집이 아닌 탭: 내용 맨 아래 오른쪽에 '우리집' 버튼 (고정지출 탭은 대출 위)
   if(view!=='home'&&!WIDGET){const v=main.querySelector('.view');if(v){const row=document.createElement('div');row.className='homerow';row.innerHTML='<button type="button" class="btn ghost homebtn" data-v="home">🏠 우리집</button>';const c=view==='fixed'&&v.querySelector(':scope>.cols');if(c)c.after(row);else v.appendChild(row)}}
   fitWide(main);for(const i of main.querySelectorAll('.cal .dc i')){let f=parseFloat(getComputedStyle(i).fontSize);while(i.scrollWidth>i.clientWidth+.5&&f>7){f-=.5;i.style.fontSize=f+'px'}}syncHist();
@@ -822,6 +823,20 @@ function vatCalc(year){const b=taxCfg().biz;if(!b||!b.open||Number(year)<Number(
   const annual=sales*12/months;const exempt=annual<48e6;const tax=exempt?0:Math.round(sales*(Number(b.rate)||30)/100*.1);
   return{b,from,sales,annual,months,exempt,tax}}
 const cfgBtn=(w,label)=>`<span class="r"><button type="button" class="btn ghost" style="padding:1px 8px;font-size:11px;box-shadow:2px 2px 0 var(--line)" data-taxcfg="${w}">${label}</button></span>`;
+// 신용카드 등 소득공제 (근로소득자만, 2026년 사용분 기준 · 자녀 없음 가정)
+// 문턱 = 연봉 25% (신용카드 몫부터 채워요) · 공제율 신용 15% / 체크·현금영수증 30% / 대중교통·전통시장 40%
+// 기본 한도 연봉 7천 이하 300만·초과 250만, 대중교통·전통시장 몫은 추가 한도(300만/200만)
+const DED_NO=['세금·보험','주거·관리비','통신','이자·수수료']; // 보험료·관리비·통신요금·이자는 공제 안 돼요
+function cardDed(w,year){const c=taxCfg()[w]||{};if(!(c.type==='emp'||c.type==='both'))return {no:'free'};const sal=Number(c.sal)||0;if(!sal)return {no:'sal'};
+  let A=0,B=0,C=0;const mNow=ym(today());
+  for(const e of Store.all('entry'))if(e.type==='지출'&&e.who===w&&e.date.slice(0,4)===year&&!e.fixedRef&&!DED_NO.includes(e.cat)){const v=Number(e.amount||0),tr=/대중교통|교통카드|후불교통|지하철|버스|전통시장/.test((e.memo||'')+' '+e.cat)||(e.cat==='교통·차'&&/교통/.test(e.memo||''));
+    if(tr&&(e.pay==='카드'||e.pay==='체크카드'))C+=v;else if(e.pay==='카드')A+=v;else if(e.pay==='체크카드')B+=v}
+  for(let m=year+'-01';m<=year+'-12'&&m<=mNow;m=addMonth(m,1)){for(const x of fixedFor(m))if(fixIsCard(x.f)&&x.f.who===w&&!DED_NO.includes(x.f.cat))A+=Number(x.f.amount||0);A+=spendSum(m).by.gap[w]||0}
+  const thr=sal*.25,L1=sal<=7e7?3e6:2.5e6,L2=sal<=7e7?3e6:2e6;let r=thr;const a=Math.max(0,A-r);r=Math.max(0,r-A);const b=Math.max(0,B-r);r=Math.max(0,r-B);const cc=Math.max(0,C-r);r=Math.max(0,r-C);
+  const gross=a*.15+b*.3+cc*.4,base=Math.min(gross,L1),extra=Math.min(Math.max(0,gross-L1),cc*.4,L2);
+  return {sal,thr,A,B,C,used:A+B+C,left:r,gross,ded:base+extra,L1,L2,full:gross>=L1,passed:r<=0,needCheck:Math.max(0,(L1-gross)/.3)}}
+function dedNotify(){const y=today().slice(0,4);for(const w of WHO.slice(0,2)){const d=cardDed(w,y);if(d.no)continue;const st=d.full?2:d.passed?1:0,k='jy.ded.'+w+'.'+y,was=ls.get(k,0);
+  if(st>was){ls.set(k,st);setTimeout(()=>toast(st===2?`💳 ${w} 카드 소득공제 한도 다 찼어요! 이제 카드 종류 상관없이 혜택 좋은 카드 쓰세요`:`💳 ${w} 카드 공제 문턱(연봉 25%) 넘었어요! 이제부터 체크카드가 2배(30%) 유리해요`),1500);return}}}
 function vTax(){const year=cur.slice(0,4);const ny=Number(year)+1;
   const card=w=>{const x=taxCalc(w,year);const c=x.c;
     if(c.type==='emp')return `<div class="card"><h3><span class="who ${whoCls(w)}">${w}</span> 직장인 ${cfgBtn(w,'소득 종류 바꾸기')}</h3><div class="small">월급 세금은 회사가 매달 떼고, ${ny}년 1~2월 연말정산으로 정리돼요. 따로 5월에 낼 세금은 보통 없어요. 원천징수영수증이나 연말정산 미리보기 화면을 Claude에게 주시면 돌려받을지 더 낼지 계산해 드려요.</div></div>`;
@@ -856,8 +871,16 @@ function vTax(){const year=cur.slice(0,4);const ny=Number(year)+1;
   return `<div class="view"><div class="toolbar">${monthNav()}<span class="small">${year}년 소득 → ${ny}년에 내는 세금</span></div>
   <div class="card" style="background:#fff3f0"><h3>두 분 합계 (예상)</h3><div class="big">${sum>0?'낼 돈 ':'돌려받을 돈 '}${won(Math.abs(sum))}<span class="won">원</span></div>
   <div class="small">📅 ${ny}년 5월 1~31일 종합소득세 신고·납부 · 11월 말 중간예납(작년 낸 세금이 있으면 고지서가 와요)</div></div>
+  ${dedCard(year)}
   <div class="cols">${card('주니')}${card('영이')}</div>${vatCard}
   <div class="card"><h3>꼭 알아 두기</h3><div class="small">이 숫자는 추정이에요. 수입 탭에서 '3.3% 뗀 수입'은 통장에 들어온 금액(실수령)을, '안 뗀 부업수입'(유튜브·블로그 광고비처럼 세금 안 떼고 들어온 돈)은 받은 금액 그대로 적어 주세요. 경비율 기본값 60%는 임시값이에요. 홈택스 '기준·단순경비율 조회'에서 업종코드(미디어콘텐츠창작업)로 확인해서 바꿔 주세요. 세율은 ${ny-1}년 기준 소득세 기본세율표(6~45%)를 썼어요. 직장인+부업은 연봉으로 월급 쪽 과세표준을 대충 추정하니, 원천징수영수증의 과세표준을 아시면 Claude에게 주세요. 신고는 꼭 홈택스에서 확인하고 하세요.</div></div></div>`}
+function dedCard(year){const bar=(v,max)=>`<div class="hp" style="height:12px"><span style="width:${max?Math.min(100,v/max*100):0}%"></span></div>`;
+  const one=w=>{const d=cardDed(w,year);if(d.no==='free')return `<div class="nod"><span><span class="who ${whoCls(w)}">${w}</span>프리랜서는 해당 없음</span><b class="m"></b></div>`;
+    if(d.no==='sal')return `<div class="nod"><span><span class="who ${whoCls(w)}">${w}</span><button type="button" class="lnk" data-taxcfg="${w}">연봉 넣기</button></span><b class="m"></b></div>`;
+    return `<div style="margin:6px 0 10px"><div class="nod" style="border:0;padding:0"><span><span class="who ${whoCls(w)}">${w}</span>${d.full?'✅ 한도 다 참':d.passed?'체크카드 30% 구간':'문턱까지 '+man(d.left)+'원'}</span><b class="m">${man(d.ded)} / ${man(d.L1)}</b></div>
+    <div class="small">문턱 ${man(d.thr)} (연봉 25%)</div>${bar(d.used,d.thr)}<div class="small">공제 한도</div>${bar(d.gross,d.L1)}
+    <div class="small">신용 ${man(d.A)} · 체크 ${man(d.B)} · 교통·시장 ${man(d.C)}${!d.full&&d.passed?` · 체크로 ${man(d.needCheck)} 더 쓰면 한도`:''}</div></div>`};
+  return `<div class="card"><h3>💳 ${year}년 카드 소득공제</h3>${one('주니')}${one('영이')}</div>`}
 function taxDlg(w){const cf=taxCfg();
   if(w==='biz'){const b=cf.biz;
     openDlg('사업자 정보',`<label class="f">상호<input type="text" id="fBn" value="${esc(b.name)}"></label>
@@ -889,7 +912,7 @@ function openDlg(title,body,okLabel,ok){document.getElementById('dtitle').textCo
 document.getElementById('dform').addEventListener('submit',e=>{const v=e.submitter&&e.submitter.value;if(v==='ok'){const msg=onOk();if(msg){e.preventDefault();document.getElementById('derr').textContent=msg}}});
 const val=id=>document.getElementById(id).value.trim();
 const numVal=id=>Number(val(id).replace(/[^0-9.-]/g,''));
-function chips(name,list,sel){return `<div class="chips" data-chips="${name}">${list.map(c=>`<button type="button" aria-pressed="${c===sel}" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`}
+function chips(name,list,sel,lab){return `<div class="chips" data-chips="${name}">${list.map(c=>`<button type="button" aria-pressed="${c===sel}" data-c="${esc(c)}">${esc((lab||{})[c]||c)}</button>`).join('')}</div>`}
 const chipVal=name=>document.querySelector(`[data-chips="${name}"] [aria-pressed="true"]`)?.dataset.c;
 dlg.addEventListener('close',()=>{preWho=null;preCat=null;preDate=null});
 dlg.addEventListener('click',e=>{const b=e.target.closest('[data-chips] button');if(!b)return;const box=b.closest('[data-chips]');box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
@@ -948,7 +971,7 @@ function parsePay(raw){
   if(!memo&&/쿠팡/.test(s))memo='쿠팡';
   if(!memo&&/대중교통|모바일 ?교통|교통카드/.test(s))memo='대중교통';
   const card=(s.match(CARD_RX)||[])[1]||'';
-  return {amount,date,memo,card,type:'지출',cat:guessCat(memo)||guessCat(s),cancel:/취소/.test(s)}}
+  return {amount,date,memo,card,type:'지출',cat:guessCat(memo)||guessCat(s),cancel:/취소/.test(s),check:/체크/.test(s)}}
 // 자동으로 적을 이체: 설정에 '받는 계좌 = 분류 = 내용' 한 줄씩
 const acctKey=x=>String(x||'').replace(/[\s\-]/g,'');
 const xferRules=()=>(settings().xferRules||'').split('\n').map(l=>l.split(/[=＝]/).map(x=>x.trim())).filter(r=>acctKey(r[0]).length>=4).map(([a,c,m])=>({a:acctKey(a),cat:c||'',memo:m||''}));
@@ -997,7 +1020,7 @@ function wireSms(){const ta=document.getElementById('fSms');if(!ta)return;const 
     if(list.length>1){msg.innerHTML=`<b>${list.length}건</b>을 찾았어요.<br>${list.map(p=>`${p.date.slice(5)} ${p.type==='수입'?'💰':''}${esc(p.memo||'?')} ${won(p.amount)}원${p.cancel?' (취소)':''}${dupEntry(p)?' ⚠이미 있음':''}${selfIn(p)?' (내 계좌 이체·뺌)':''}`).join('<br>')}<div class="toolbar"><button type="button" class="btn" id="smsAll">취소·중복·내 이체 빼고 모두 저장</button></div>`;
       document.getElementById('smsAll').onclick=()=>{let n=0;for(const p of list){if(p.cancel||dupEntry(p)||selfIn(p))continue;const xr=xferRule(p);Store.put({id:uid(),kind:'entry',type:p.type,who:chipVal('who')||me(),amount:p.amount,cat:(xr&&xr.cat)||p.cat||CATS[p.type][CATS[p.type].length-1],memo:(xr&&xr.memo)||p.memo,date:p.date,pay:p.type==='지출'?(p.transfer?'현금·이체':'카드'):''});n++}
         dlg.close();toast(n+'건 저장했어요')};return}
-    const p=list[0];const xr=xferRule(p);if(xr){p.cat=xr.cat;p.memo=xr.memo||'이체'}fill(p);if(p.type==='지출')setChip('pay',p.transfer?'현금·이체':'카드');
+    const p=list[0];const xr=xferRule(p);if(xr){p.cat=xr.cat;p.memo=xr.memo||'이체'}fill(p);if(p.type==='지출')setChip('pay',p.transfer?'현금·이체':p.check?'체크카드':'카드');
     msg.innerHTML=(p.cancel?'⚠ <b>취소</b> 문자예요. 예전 기록을 찾아 지우는 게 맞아요. ':'채웠어요. 확인하고 저장을 눌러 주세요. ')+(dupEntry(p)?'<br>⚠ 같은 날 같은 금액 기록이 이미 있어요.':'')+(selfIn(p)?'<br>⚠ 내 계좌끼리 옮긴 돈 같아요. 수입이 아니면 저장하지 마세요.':'')+(p.cat?'':'<br>분류는 직접 골라 주세요.')};
   ta.addEventListener('input',run);
   document.getElementById('smsPaste').onclick=async()=>{try{ta.value=await navigator.clipboard.readText();run()}catch(e){msg.textContent='위 칸을 길게 눌러 붙여넣기 해 주세요.';ta.focus()}}}
@@ -1015,7 +1038,7 @@ function entryDlg(type,rec,pay){
   <label class="f">분류<span id="catBox">${catChips(r.type,r.cat)}</span></label>
   <label class="f">내용 (선택)<input type="text" id="fMemo" value="${esc(r.memo||'')}" placeholder="예) 마트 장보기"></label>
   <label class="f">날짜<input type="date" id="fDate" value="${r.date}"></label>
-  <label class="f" id="payBox" ${r.type!=='지출'?'hidden':''}>결제${chips('pay',['카드','현금·이체'],r.pay||'카드')}</label>`,'저장',()=>{
+  <label class="f" id="payBox" ${r.type!=='지출'?'hidden':''}>결제${chips('pay',['카드','체크카드','현금·이체'],r.pay||'카드',{카드:'신용카드'})}</label>`,'저장',()=>{
     const amt=numVal('fAmt');if(!amt||amt<=0)return '금액을 숫자로 적어 주세요.';const date=val('fDate');if(!date)return '날짜를 골라 주세요.';
     const t=chipVal('type');Store.put({...(rec||{}),id:rec?.id||uid(),kind:'entry',type:t,who:chipVal('who'),amount:amt,cat:chipVal('cat'),memo:val('fMemo'),date,pay:t==='지출'?chipVal('pay'):''});
     cur=ym(date);toast('저장했어요')});
